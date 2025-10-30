@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    build:
+      context: ../
+      dockerfile: infra/docker/Dockerfile.postgres
+    container_name: contabil-postgres-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-contabil}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-contabil123}
+      POSTGRES_DB: ${POSTGRES_DB:-contabil_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - contabil-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-contabil} -d $${POSTGRES_DB:-contabil_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # FastAPI Backend
+  api:
+    build:
+      context: ../
+      dockerfile: infra/docker/Dockerfile.api
+    container_name: contabil-api-dev
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-contabil}:${POSTGRES_PASSWORD:-contabil123}@postgres:5432/${POSTGRES_DB:-contabil_db}
+      - DATABASE_WRITE_URL=postgresql+asyncpg://${POSTGRES_USER:-contabil}:${POSTGRES_PASSWORD:-contabil123}@postgres:5432/${POSTGRES_DB:-contabil_db}
+      - DATABASE_READ_URL=postgresql+asyncpg://${POSTGRES_USER:-contabil}:${POSTGRES_PASSWORD:-contabil123}@postgres:5432/${POSTGRES_DB:-contabil_db}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - CORS_ORIGINS=http://localhost:3000,http://localhost,http://web:3000
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=INFO
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ../apps/api:/app
+      - api_uploads:/var/uploads
+    networks:
+      - contabil-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Next.js Frontend
+  web:
+    build:
+      context: ../
+      dockerfile: infra/docker/Dockerfile.web
+    container_name: contabil-web-dev
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost/api/v1
+      - NEXT_PUBLIC_WS_URL=ws://localhost/ws
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - ../apps/web:/app/apps/web
+      - ../packages:/app/packages
+      - /app/node_modules
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
+    networks:
+      - contabil-network
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: contabil-nginx-dev
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - contabil-network
+    depends_on:
+      - web
+      - api
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    name: contabil_postgres_data
+  api_uploads:
+    name: contabil_api_uploads
+
+networks:
+  contabil-network:
+    name: contabil-network
+    driver: bridge

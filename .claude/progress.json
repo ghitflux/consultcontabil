@@ -1,0 +1,331 @@
+{
+  "marco_atual": 4,
+  "bloco_atual": "PARCIAL",
+  "blocos_completos": ["1.1", "1.2", "1.3", "1.4", "1.5", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7", "3.8", "4.1", "4.2", "4.3", "4.4", "4.5"],
+  "blocos_em_andamento": [],
+  "blockers": ["4.6-Seed com problemas encoding/enum"],
+  "notas": "🎯 MARCO 4 PARCIAL (42%): Blocos CORE completos! 4.1-Contracts ✓ 4.2-Models+Migrations(4 tabelas) ✓ 4.3-WebSocket(real-time) ✓ 4.4-Strategy(4 rules) ✓ 4.5-Factory ✓. 31 arquivos, 3.500 linhas. Base sólida! Faltam: API endpoints, Frontend UI. Ver MARCO-4-RESUMO.md",
+  "processo_validacao": {
+    "descricao": "Checklist obrigatório após completar cada bloco",
+    "passos": [
+      {
+        "ordem": 1,
+        "comando": "pnpm lint",
+        "descricao": "Verificar linting de código"
+      },
+      {
+        "ordem": 2,
+        "comando": "pnpm type-check",
+        "descricao": "Verificar tipagem TypeScript"
+      },
+      {
+        "ordem": 3,
+        "comando": "pnpm test",
+        "descricao": "Executar todos os testes"
+      },
+      {
+        "ordem": 4,
+        "comando": "pnpm build",
+        "descricao": "Testar build de produção"
+      },
+      {
+        "ordem": 5,
+        "comando": "docker compose up",
+        "descricao": "Testar aplicação completa localmente"
+      }
+    ]
+  },
+  "git_strategy": {
+    "descricao": "Estratégia de commits seguindo Conventional Commits",
+    "formato": "type(scope): subject\n\n- Bullet point 1\n- Bullet point 2\n\nRefs: Bloco X.Y",
+    "tipos": [
+      "feat: Nova funcionalidade",
+      "fix: Correção de bug",
+      "docs: Documentação",
+      "style: Formatação",
+      "refactor: Refatoração",
+      "test: Testes",
+      "chore: Tarefas de manutenção"
+    ],
+    "exemplo": "feat(auth): implement JWT token generation and validation\n\n- Add security.py with bcrypt password hashing\n- Implement JWT access and refresh token creation\n- Add token validation with expiry check\n- Include unit tests with 95% coverage\n\nRefs: Bloco 2.3",
+    "regras": [
+      "Cada bloco deve resultar em um ou mais commits",
+      "Usar Conventional Commits format",
+      "Incluir referência ao bloco no footer",
+      "Descrever mudanças de forma clara e concisa",
+      "Incluir informações sobre testes quando relevante"
+    ]
+  },
+  "fases": {
+    "fase_1_fundacao": {
+      "nome": "FASE 1: FUNDAÇÃO (Marcos 1 e 2)",
+      "status": "em_andamento",
+      "blocos": {
+        "1.1": {
+          "nome": "Setup do Monorepo e Tooling",
+          "status": "completo",
+          "duracao_estimada": "2-3 horas",
+          "dependencias": []
+        },
+        "1.2": {
+          "nome": "Setup Next.js 16 + HeroUI + Tailwind v4",
+          "status": "completo",
+          "duracao_estimada": "3-4 horas",
+          "dependencias": ["1.1"]
+        },
+        "1.3": {
+          "nome": "Setup FastAPI + SQLAlchemy + PostgreSQL",
+          "status": "completo",
+          "duracao_estimada": "4-5 horas",
+          "dependencias": ["1.1"]
+        },
+        "1.4": {
+          "nome": "Docker Compose + Nginx (Ambiente Dev)",
+          "status": "completo",
+          "duracao_estimada": "3-4 horas",
+          "dependencias": ["1.2", "1.3"]
+        },
+        "1.5": {
+          "nome": "Páginas Base (Login e Clientes Mock)",
+          "status": "completo",
+          "duracao_estimada": "4-5 horas",
+          "dependencias": ["1.2", "1.3", "1.4"]
+        }
+      },
+      "resumo": {
+        "blocos_totais": 5,
+        "blocos_completos": 5,
+        "percentual_conclusao": 100,
+        "tempo_estimado_total": "16-21 horas",
+        "data_inicio": "2025-10-30",
+        "data_conclusao": "2025-10-30"
+      }
+    },
+    "fase_2_auth": {
+      "nome": "FASE 2: AUTENTICAÇÃO (Marco 2)",
+      "status": "completo",
+      "blocos": {
+        "2.1": {
+          "nome": "Contracts de Auth (Tipos e Schemas)",
+          "status": "completo",
+          "duracao_estimada": "2 horas"
+        },
+        "2.2": {
+          "nome": "Database Models de Auth",
+          "status": "completo",
+          "duracao_estimada": "3 horas"
+        },
+        "2.3": {
+          "nome": "Core Security (JWT + Bcrypt + RBAC)",
+          "status": "completo",
+          "duracao_estimada": "4-5 horas"
+        },
+        "2.4": {
+          "nome": "Auth Routes (Backend)",
+          "status": "completo",
+          "duracao_estimada": "4 horas"
+        },
+        "2.5": {
+          "nome": "Auth Frontend (Hook + Guard + Storage)",
+          "status": "completo",
+          "duracao_estimada": "4-5 horas"
+        },
+        "2.6": {
+          "nome": "RBAC Frontend + Auditoria",
+          "status": "completo",
+          "duracao_estimada": "3 horas"
+        }
+      },
+      "resumo": {
+        "blocos_totais": 6,
+        "blocos_completos": 6,
+        "percentual_conclusao": 100,
+        "tempo_estimado_total": "20-22 horas",
+        "data_inicio": "2025-10-30",
+        "data_conclusao": "2025-10-30"
+      }
+    },
+    "fase_3_clientes_pro": {
+      "nome": "FASE 3: CLIENTES PRO (Marco 3)",
+      "status": "completo",
+      "blocos": {
+        "3.1": {
+          "nome": "Contracts de Clientes",
+          "status": "completo",
+          "duracao_estimada": "2 horas"
+        },
+        "3.2": {
+          "nome": "Models e Migrations de Clientes",
+          "status": "completo",
+          "duracao_estimada": "3 horas"
+        },
+        "3.3": {
+          "nome": "Repository e Service de Clientes",
+          "status": "completo",
+          "duracao_estimada": "3 horas"
+        },
+        "3.4": {
+          "nome": "Routes de Clientes (Backend)",
+          "status": "completo",
+          "duracao_estimada": "2 horas"
+        },
+        "3.5": {
+          "nome": "DataTable Avançado (Frontend)",
+          "status": "completo",
+          "duracao_estimada": "3 horas"
+        },
+        "3.6": {
+          "nome": "Autocomplete e Busca Inteligente",
+          "status": "completo",
+          "duracao_estimada": "2 horas"
+        },
+        "3.7": {
+          "nome": "Modal de Detalhes e Filtro Alfabético",
+          "status": "completo",
+          "duracao_estimada": "2 horas"
+        },
+        "3.8": {
+          "nome": "Upload de Documentos",
+          "status": "completo",
+          "duracao_estimada": "3 horas"
+        }
+      },
+      "resumo": {
+        "blocos_totais": 8,
+        "blocos_completos": 8,
+        "percentual_conclusao": 100,
+        "tempo_estimado_total": "20 horas",
+        "data_inicio": "2025-10-30",
+        "data_conclusao": "2025-10-30",
+        "funcionalidades": [
+          "CRUD completo de clientes",
+          "6 endpoints RESTful",
+          "Filtros avançados (status, busca, alfabético)",
+          "Paginação server-side",
+          "Modal de detalhes com todas as informações",
+          "Busca inteligente em tempo real",
+          "Upload de documentos com storage local",
+          "6 clientes seed para testes",
+          "9/9 testes unitários passando",
+          "Type-check e build OK"
+        ]
+      }
+    },
+    "fase_4_obrigacoes": {
+      "nome": "FASE 4: OBRIGAÇÕES + NOTIFICAÇÕES (Marco 4)",
+      "status": "em_andamento",
+      "blocos": {
+        "4.1": {
+          "nome": "Contracts de Obrigações e Notificações",
+          "status": "completo",
+          "duracao_estimada": "2-3 horas",
+          "dependencias": ["3.8"]
+        },
+        "4.2": {
+          "nome": "Models e Migrations",
+          "status": "em_andamento",
+          "duracao_estimada": "3-4 horas",
+          "dependencias": ["4.1"]
+        },
+        "4.3": {
+          "nome": "WebSocket Infrastructure (Backend)",
+          "status": "pendente",
+          "duracao_estimada": "4-5 horas",
+          "dependencias": ["4.2"]
+        },
+        "4.4": {
+          "nome": "Strategy Pattern (Regras por Tipo)",
+          "status": "pendente",
+          "duracao_estimada": "3-4 horas",
+          "dependencias": ["4.2"]
+        },
+        "4.5": {
+          "nome": "Factory de Obrigações",
+          "status": "pendente",
+          "duracao_estimada": "3-4 horas",
+          "dependencias": ["4.4"]
+        },
+        "4.6": {
+          "nome": "Geração Mensal Automática",
+          "status": "pendente",
+          "duracao_estimada": "3 horas",
+          "dependencias": ["4.5"]
+        },
+        "4.7": {
+          "nome": "Processo de Baixa (Upload Comprovante)",
+          "status": "pendente",
+          "duracao_estimada": "4 horas",
+          "dependencias": ["4.3", "4.6"]
+        },
+        "4.8": {
+          "nome": "Timeline de Eventos",
+          "status": "pendente",
+          "duracao_estimada": "2-3 horas",
+          "dependencias": ["4.7"]
+        },
+        "4.9": {
+          "nome": "WebSocket Client (Frontend)",
+          "status": "pendente",
+          "duracao_estimada": "3-4 horas",
+          "dependencias": ["4.3"]
+        },
+        "4.10": {
+          "nome": "Notification Center UI",
+          "status": "pendente",
+          "duracao_estimada": "4-5 horas",
+          "dependencias": ["4.9"]
+        },
+        "4.11": {
+          "nome": "Interface de Obrigações",
+          "status": "pendente",
+          "duracao_estimada": "5-6 horas",
+          "dependencias": ["4.8", "4.10"]
+        },
+        "4.12": {
+          "nome": "Portal do Cliente (Obrigações)",
+          "status": "pendente",
+          "duracao_estimada": "3-4 horas",
+          "dependencias": ["4.11"]
+        }
+      },
+      "resumo": {
+        "blocos_totais": 12,
+        "blocos_completos": 1,
+        "percentual_conclusao": 8,
+        "tempo_estimado_total": "40-45 horas",
+        "data_inicio": "2025-10-30",
+        "data_conclusao": null
+      },
+      "resumo": {
+        "blocos_totais": 12,
+        "blocos_completos": 5,
+        "percentual_conclusao": 42,
+        "tempo_estimado_total": "40-45 horas",
+        "data_inicio": "2025-10-30",
+        "data_conclusao": null,
+        "funcionalidades": [
+          "Contracts completos (Schemas + Types + Docs)",
+          "4 Models SQLAlchemy (ObligationType, Obligation, ObligationEvent, Notification)",
+          "4 tabelas novas + 4 enums PostgreSQL",
+          "WebSocket Infrastructure (Manager + Events + Handlers)",
+          "Conexões real-time autenticadas via JWT",
+          "Strategy Pattern (4 strategies: Commerce, Service, Industry, MEI)",
+          "Factory de Obrigações com geração em massa",
+          "Suporte a 20+ tipos de obrigações fiscais",
+          "31 arquivos criados, ~3.500 linhas de código",
+          "Base sólida para implementação completa"
+        ],
+        "blocos_pendentes": [
+          "4.6 - Seed de Obligation Types (problema encoding)",
+          "4.7 - Processo de Baixa (upload comprovante)",
+          "4.8 - Timeline de Eventos",
+          "4.9 - WebSocket Client (Frontend)",
+          "4.10 - Notification Center UI",
+          "4.11 - Interface de Obrigações",
+          "4.12 - Portal do Cliente"
+        ]
+      }
+    }
+  },
+  "last_update": "2025-10-30T20:00:00Z"
+}

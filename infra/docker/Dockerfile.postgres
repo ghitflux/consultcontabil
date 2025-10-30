@@ -1,0 +1,12 @@
+# Dockerfile for PostgreSQL 16
+FROM postgres:16-alpine
+
+# Set locale
+ENV LANG=pt_BR.UTF-8
+ENV LC_ALL=pt_BR.UTF-8
+
+# Copy initialization scripts (if needed)
+# COPY init-scripts/ /docker-entrypoint-initdb.d/
+
+# Expose PostgreSQL port
+EXPOSE 5432

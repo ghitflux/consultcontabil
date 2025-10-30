@@ -1,0 +1,163 @@
+"""
+Client schemas for API requests and responses.
+"""
+
+from datetime import date, datetime
+from enum import Enum
+from typing import Optional
+from uuid import UUID
+
+from pydantic import EmailStr, Field, field_validator
+
+from .base import BaseSchema, TimestampSchema
+
+
+class ClientStatus(str, Enum):
+    """Client status enumeration."""
+
+    ATIVO = "ativo"
+    INATIVO = "inativo"
+    PENDENTE = "pendente"
+
+
+class RegimeTributario(str, Enum):
+    """Tax regime enumeration."""
+
+    SIMPLES_NACIONAL = "simples_nacional"
+    LUCRO_PRESUMIDO = "lucro_presumido"
+    LUCRO_REAL = "lucro_real"
+    MEI = "mei"
+
+
+class TipoEmpresa(str, Enum):
+    """Company type enumeration."""
+
+    COMERCIO = "comercio"
+    SERVICO = "servico"
+    INDUSTRIA = "industria"
+    MISTO = "misto"
+
+
+class ClientBase(BaseSchema):
+    """Base client schema with common fields."""
+
+    razao_social: str = Field(..., min_length=1, max_length=255)
+    nome_fantasia: Optional[str] = Field(None, max_length=255)
+    cnpj: str = Field(..., min_length=14, max_length=18)
+    inscricao_estadual: Optional[str] = Field(None, max_length=20)
+    inscricao_municipal: Optional[str] = Field(None, max_length=20)
+
+    # Contact
+    email: EmailStr
+    telefone: Optional[str] = Field(None, max_length=20)
+    celular: Optional[str] = Field(None, max_length=20)
+
+    # Address
+    cep: Optional[str] = Field(None, max_length=9)
+    logradouro: Optional[str] = Field(None, max_length=255)
+    numero: Optional[str] = Field(None, max_length=20)
+    complemento: Optional[str] = Field(None, max_length=100)
+    bairro: Optional[str] = Field(None, max_length=100)
+    cidade: Optional[str] = Field(None, max_length=100)
+    uf: Optional[str] = Field(None, min_length=2, max_length=2)
+
+    # Financial
+    honorarios_mensais: float = Field(..., ge=0)
+    dia_vencimento: int = Field(..., ge=1, le=31)
+
+    # Tax info
+    regime_tributario: RegimeTributario
+    tipo_empresa: TipoEmpresa
+    data_abertura: Optional[date] = None
+
+    # Responsible person
+    responsavel_nome: Optional[str] = Field(None, max_length=255)
+    responsavel_cpf: Optional[str] = Field(None, max_length=14)
+    responsavel_email: Optional[EmailStr] = None
+    responsavel_telefone: Optional[str] = Field(None, max_length=20)
+
+    # Notes
+    observacoes: Optional[str] = None
+
+    @field_validator("cnpj")
+    @classmethod
+    def validate_cnpj(cls, v: str) -> str:
+        """Validate CNPJ format."""
+        # Remove non-numeric characters
+        cnpj = "".join(filter(str.isdigit, v))
+
+        if len(cnpj) != 14:
+            raise ValueError("CNPJ deve conter 14 dígitos")
+
+        # Format as XX.XXX.XXX/XXXX-XX
+        return f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}"
+
+    @field_validator("uf")
+    @classmethod
+    def validate_uf(cls, v: Optional[str]) -> Optional[str]:
+        """Validate and uppercase UF."""
+        return v.upper() if v else None
+
+
+class ClientCreate(ClientBase):
+    """Schema for creating a new client."""
+
+    status: ClientStatus = ClientStatus.PENDENTE
+
+
+class ClientUpdate(BaseSchema):
+    """Schema for updating a client."""
+
+    razao_social: Optional[str] = Field(None, min_length=1, max_length=255)
+    nome_fantasia: Optional[str] = Field(None, max_length=255)
+    cnpj: Optional[str] = Field(None, min_length=14, max_length=18)
+    inscricao_estadual: Optional[str] = Field(None, max_length=20)
+    inscricao_municipal: Optional[str] = Field(None, max_length=20)
+
+    email: Optional[EmailStr] = None
+    telefone: Optional[str] = Field(None, max_length=20)
+    celular: Optional[str] = Field(None, max_length=20)
+
+    cep: Optional[str] = Field(None, max_length=9)
+    logradouro: Optional[str] = Field(None, max_length=255)
+    numero: Optional[str] = Field(None, max_length=20)
+    complemento: Optional[str] = Field(None, max_length=100)
+    bairro: Optional[str] = Field(None, max_length=100)
+    cidade: Optional[str] = Field(None, max_length=100)
+    uf: Optional[str] = Field(None, min_length=2, max_length=2)
+
+    honorarios_mensais: Optional[float] = Field(None, ge=0)
+    dia_vencimento: Optional[int] = Field(None, ge=1, le=31)
+
+    regime_tributario: Optional[RegimeTributario] = None
+    tipo_empresa: Optional[TipoEmpresa] = None
+    data_abertura: Optional[date] = None
+
+    responsavel_nome: Optional[str] = Field(None, max_length=255)
+    responsavel_cpf: Optional[str] = Field(None, max_length=14)
+    responsavel_email: Optional[EmailStr] = None
+    responsavel_telefone: Optional[str] = Field(None, max_length=20)
+
+    observacoes: Optional[str] = None
+    status: Optional[ClientStatus] = None
+
+
+class ClientResponse(ClientBase, TimestampSchema):
+    """Schema for client response."""
+
+    id: UUID
+    status: ClientStatus
+
+
+class ClientListItem(TimestampSchema):
+    """Schema for client list item (simplified)."""
+
+    id: UUID
+    razao_social: str
+    nome_fantasia: Optional[str]
+    cnpj: str
+    email: EmailStr
+    status: ClientStatus
+    honorarios_mensais: float
+    regime_tributario: RegimeTributario
+    tipo_empresa: TipoEmpresa

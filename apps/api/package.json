@@ -1,0 +1,9 @@
+{
+  "name": "api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'FastAPI will be configured in Block 1.3'",
+    "test": "echo 'FastAPI will be configured in Block 1.3'"
+  }
+}

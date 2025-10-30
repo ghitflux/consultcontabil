@@ -1,0 +1,244 @@
+"""
+Client service with business logic.
+"""
+
+from typing import Optional
+from uuid import UUID
+
+from fastapi import HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.models.client import Client
+from app.db.repositories.client import ClientRepository
+from app.schemas.client import ClientCreate, ClientListItem, ClientResponse, ClientUpdate
+
+
+class ClientService:
+    """Service for client operations."""
+
+    def __init__(self, session: AsyncSession):
+        """
+        Initialize client service.
+
+        Args:
+            session: Database session
+        """
+        self.session = session
+        self.repo = ClientRepository(session)
+
+    async def create_client(self, client_data: ClientCreate) -> ClientResponse:
+        """
+        Create a new client.
+
+        Args:
+            client_data: Client creation data
+
+        Returns:
+            Created client
+
+        Raises:
+            HTTPException: If CNPJ already exists
+        """
+        # Check if CNPJ already exists
+        if await self.repo.cnpj_exists(client_data.cnpj):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="CNPJ already registered"
+            )
+
+        # Create client
+        client = Client(**client_data.model_dump())
+        client = await self.repo.create(client)
+        await self.session.commit()
+        await self.session.refresh(client)
+
+        return ClientResponse.model_validate(client)
+
+    async def get_client(self, client_id: UUID) -> ClientResponse:
+        """
+        Get client by ID.
+
+        Args:
+            client_id: Client UUID
+
+        Returns:
+            Client data
+
+        Raises:
+            HTTPException: If client not found
+        """
+        client = await self.repo.get_by_id(client_id)
+
+        if not client or client.is_deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Client not found"
+            )
+
+        return ClientResponse.model_validate(client)
+
+    async def get_client_by_cnpj(self, cnpj: str) -> ClientResponse:
+        """
+        Get client by CNPJ.
+
+        Args:
+            cnpj: Client CNPJ
+
+        Returns:
+            Client data
+
+        Raises:
+            HTTPException: If client not found
+        """
+        client = await self.repo.get_by_cnpj(cnpj)
+
+        if not client:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Client not found"
+            )
+
+        return ClientResponse.model_validate(client)
+
+    async def update_client(
+        self,
+        client_id: UUID,
+        client_data: ClientUpdate,
+    ) -> ClientResponse:
+        """
+        Update client.
+
+        Args:
+            client_id: Client UUID
+            client_data: Client update data
+
+        Returns:
+            Updated client
+
+        Raises:
+            HTTPException: If client not found or CNPJ already exists
+        """
+        # Get client
+        client = await self.repo.get_by_id(client_id)
+
+        if not client or client.is_deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Client not found"
+            )
+
+        # Check if CNPJ is being changed and already exists
+        if client_data.cnpj and client_data.cnpj != client.cnpj:
+            if await self.repo.cnpj_exists(client_data.cnpj, exclude_id=client_id):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="CNPJ already registered"
+                )
+
+        # Update fields
+        update_data = client_data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(client, field, value)
+
+        client = await self.repo.update(client)
+        await self.session.commit()
+        await self.session.refresh(client)
+
+        return ClientResponse.model_validate(client)
+
+    async def delete_client(self, client_id: UUID) -> None:
+        """
+        Delete client (soft delete).
+
+        Args:
+            client_id: Client UUID
+
+        Raises:
+            HTTPException: If client not found
+        """
+        client = await self.repo.get_by_id(client_id)
+
+        if not client or client.is_deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Client not found"
+            )
+
+        client.soft_delete()
+        await self.session.commit()
+
+    async def list_clients(
+        self,
+        query: Optional[str] = None,
+        status: Optional[str] = None,
+        starts_with: Optional[str] = None,
+        page: int = 1,
+        size: int = 10,
+    ) -> dict:
+        """
+        List clients with filters and pagination.
+
+        Args:
+            query: Search term
+            status: Filter by status
+            starts_with: Filter by first letter
+            page: Page number (1-indexed)
+            size: Page size
+
+        Returns:
+            Paginated client list
+        """
+        skip = (page - 1) * size
+
+        # Convert status string to enum
+        status_enum = None
+        if status:
+            from app.db.models.client import ClientStatus
+            try:
+                status_enum = ClientStatus(status)
+            except ValueError:
+                pass
+
+        clients, total = await self.repo.list_with_filters(
+            query=query,
+            status=status_enum,
+            starts_with=starts_with,
+            skip=skip,
+            limit=size,
+        )
+
+        # Convert to list items
+        items = [ClientListItem.model_validate(c) for c in clients]
+
+        # Calculate pages
+        pages = (total + size - 1) // size if size > 0 else 0
+
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "size": size,
+            "pages": pages,
+        }
+
+    async def search_clients(self, query: str, limit: int = 10) -> list[dict]:
+        """
+        Quick search for autocomplete.
+
+        Args:
+            query: Search term
+            limit: Maximum results
+
+        Returns:
+            List of clients (simplified)
+        """
+        clients = await self.repo.search(query, limit)
+
+        return [
+            {
+                "id": str(c.id),
+                "razao_social": c.razao_social,
+                "cnpj": c.cnpj,
+            }
+            for c in clients
+        ]

@@ -1,0 +1,47 @@
+{
+  "name": "monorepo-saas-contabil",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SaaS Contábil - Sistema de gestão para escritórios de contabilidade",
+  "keywords": ["saas", "contabilidade", "nextjs", "fastapi", "monorepo"],
+  "author": "Contabil Consult",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18.17.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "scripts": {
+    "dev": "pnpm --parallel --stream dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "cd apps/api && uvicorn app.main:app --reload",
+    "build": "pnpm --recursive build",
+    "build:web": "pnpm --filter web build",
+    "lint": "pnpm --recursive lint",
+    "lint:fix": "pnpm --recursive lint:fix",
+    "type-check": "pnpm --recursive type-check",
+    "test": "pnpm --recursive test",
+    "clean": "pnpm --recursive clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "prepare": "husky install || true"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "husky": "^9.0.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.3.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "typescript": "^5.3.3"
+    }
+  }
+}
