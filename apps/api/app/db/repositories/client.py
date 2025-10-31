@@ -185,3 +185,23 @@ class ClientRepository(BaseRepository[Client]):
             .limit(limit)
         )
         return list(result.scalars().all())
+
+    async def get_by_user_id(self, user_id: UUID) -> Client | None:
+        """
+        Get client associated with a user account.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            Client or None if not found
+        """
+        result = await self.session.execute(
+            select(Client).where(
+                and_(
+                    Client.user_id == user_id,
+                    Client.deleted_at.is_(None)
+                )
+            )
+        )
+        return result.scalar_one_or_none()

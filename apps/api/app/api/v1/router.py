@@ -4,7 +4,7 @@ API v1 router aggregator.
 
 from fastapi import APIRouter
 
-from app.api.v1.routes import auth, clients, documents, health, users, websocket
+from app.api.v1.routes import auth, clients, cnaes, documents, finance, health, licenses, municipal_registrations, obligations, users, websocket
 
 api_router = APIRouter()
 
@@ -14,8 +14,12 @@ api_router.include_router(auth.router)
 api_router.include_router(users.router)
 api_router.include_router(clients.router)
 api_router.include_router(documents.router)
+api_router.include_router(obligations.router, prefix="/obligations", tags=["obligations"])
+api_router.include_router(finance.router, prefix="/finance", tags=["finance"])
+api_router.include_router(licenses.router)
+api_router.include_router(cnaes.router)
+api_router.include_router(municipal_registrations.router)
 api_router.include_router(websocket.router, tags=["websocket"])
 
 # Future routers will be added here:
-# api_router.include_router(obligations.router, prefix="/obligations", tags=["obligations"])
 # api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])

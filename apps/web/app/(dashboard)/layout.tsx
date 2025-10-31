@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button, Link, Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@/heroui';
+import { NotificationCenter } from '@/components/shared/NotificationCenter';
 
 export default function DashboardLayout({
   children,
@@ -66,26 +67,32 @@ export default function DashboardLayout({
 
           <div className="flex-1" />
 
-          <Dropdown placement="bottom-end">
-            <DropdownTrigger>
-              <Avatar
-                as="button"
-                className="cursor-pointer"
-                name="Admin"
-                size="sm"
-              />
-            </DropdownTrigger>
-            <DropdownMenu aria-label="Profile Actions">
-              <DropdownItem key="profile" className="gap-2">
-                <p className="font-semibold">Usuário Mock</p>
-                <p className="text-sm">admin@example.com</p>
-              </DropdownItem>
-              <DropdownItem key="settings">Configurações</DropdownItem>
-              <DropdownItem key="logout" color="danger">
-                Sair
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
+          <div className="flex items-center gap-4">
+            {/* Notification Center */}
+            <NotificationCenter />
+
+            {/* User Menu */}
+            <Dropdown placement="bottom-end">
+              <DropdownTrigger>
+                <Avatar
+                  as="button"
+                  className="cursor-pointer"
+                  name="Admin"
+                  size="sm"
+                />
+              </DropdownTrigger>
+              <DropdownMenu aria-label="Profile Actions">
+                <DropdownItem key="profile" className="gap-2">
+                  <p className="font-semibold">Usuário Mock</p>
+                  <p className="text-sm">admin@example.com</p>
+                </DropdownItem>
+                <DropdownItem key="settings">Configurações</DropdownItem>
+                <DropdownItem key="logout" color="danger">
+                  Sair
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+          </div>
         </header>
 
         {/* Page Content */}

@@ -137,9 +137,8 @@ class ObligationListResponse(BaseModel):
     """Schema for paginated obligation list"""
     items: list[ObligationResponse]
     total: int
-    page: int
-    size: int
-    pages: int
+    skip: int
+    limit: int
 
 
 class ObligationReceiptUpload(BaseModel):
@@ -149,24 +148,34 @@ class ObligationReceiptUpload(BaseModel):
 
 class ObligationGenerateRequest(BaseModel):
     """Schema for obligation generation request"""
-    reference_month: Optional[date] = None
-    client_ids: Optional[list[UUID]] = None
-
-    @field_validator('reference_month')
-    @classmethod
-    def validate_reference_month(cls, v: Optional[date]) -> Optional[date]:
-        """Ensure reference_month is first day of month"""
-        if v and v.day != 1:
-            return date(v.year, v.month, 1)
-        return v
+    year: int = Field(..., ge=2000, le=2100)
+    month: int = Field(..., ge=1, le=12)
+    client_id: Optional[UUID] = None  # If None, generate for all clients
 
 
 class ObligationGenerateResponse(BaseModel):
     """Schema for obligation generation response"""
-    reference_month: date
-    total_created: int
-    total_clients: int
-    status: str = "success"
+    success: bool = True
+    total_clients: Optional[int] = None
+    total_obligations: int
+    errors: Optional[int] = None
+    obligations: Optional[list["ObligationResponse"]] = None
+
+
+class ObligationReceiptRequest(BaseModel):
+    """Schema for receipt upload request"""
+    notes: Optional[str] = Field(None, max_length=1000)
+
+
+class ObligationUpdateDueDateRequest(BaseModel):
+    """Schema for updating due date"""
+    new_due_date: datetime
+    reason: str = Field(..., min_length=1, max_length=500)
+
+
+class ObligationCancelRequest(BaseModel):
+    """Schema for cancelling obligation"""
+    reason: str = Field(..., min_length=1, max_length=500)
 
 
 # Obligation Event Schemas

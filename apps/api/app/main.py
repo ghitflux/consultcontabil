@@ -2,6 +2,7 @@
 FastAPI application entry point.
 """
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -21,6 +22,45 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Background task handle
+_expiration_task: asyncio.Task | None = None
+
+
+async def _schedule_license_expiration_checks() -> None:
+    """
+    Schedule daily license expiration checks.
+    Runs at 8 AM daily.
+    """
+    import datetime
+
+    while True:
+        try:
+            # Calculate next 8 AM
+            now = datetime.datetime.now()
+            next_run = now.replace(hour=8, minute=0, second=0, microsecond=0)
+
+            # If it's past 8 AM today, schedule for tomorrow
+            if now >= next_run:
+                next_run += datetime.timedelta(days=1)
+
+            # Wait until next run
+            wait_seconds = (next_run - now).total_seconds()
+            logger.info(f"Scheduling next license expiration check for {next_run} (in {wait_seconds/3600:.1f} hours)")
+
+            await asyncio.sleep(wait_seconds)
+
+            # Run the check
+            from app.tasks.license_expiration import check_license_expirations_task
+            await check_license_expirations_task()
+
+        except asyncio.CancelledError:
+            logger.info("License expiration check task cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Error in scheduled license expiration check: {e}", exc_info=True)
+            # Wait 1 hour before retrying
+            await asyncio.sleep(3600)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -28,6 +68,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     Application lifespan events.
     Startup and shutdown logic.
     """
+    global _expiration_task
+
     # Startup
     logger.info("Starting application...")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
@@ -41,10 +83,27 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.error(f"✗ Database connection failed: {e}")
 
+    # Start background task for license expiration checks
+    try:
+        _expiration_task = asyncio.create_task(_schedule_license_expiration_checks())
+        logger.info("✓ License expiration check task scheduled")
+    except Exception as e:
+        logger.error(f"✗ Failed to start license expiration check task: {e}")
+
     yield
 
     # Shutdown
     logger.info("Shutting down application...")
+
+    # Cancel background task
+    if _expiration_task:
+        _expiration_task.cancel()
+        try:
+            await _expiration_task
+        except asyncio.CancelledError:
+            pass
+        logger.info("✓ License expiration check task cancelled")
+
     await db_manager.close()
     logger.info("✓ Database connections closed")
 

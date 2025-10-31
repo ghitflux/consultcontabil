@@ -26,6 +26,8 @@ class BaseRepository(Generic[ModelType]):
         """
         self.model = model
         self.session = session
+        # Alias for compatibility
+        self.db = session
 
     async def get_by_id(self, id: UUID) -> ModelType | None:
         """
