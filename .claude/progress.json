@@ -1,10 +1,10 @@
 {
-  "marco_atual": 6,
-  "bloco_atual": "6.12",
-  "blocos_completos": ["1.1", "1.2", "1.3", "1.4", "1.5", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7", "3.8", "4.1", "4.2", "4.3", "4.4", "4.5", "4.7", "4.8", "4.9", "4.10", "4.11", "4.12", "5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8", "5.9", "5.10", "5.11", "5.12", "6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "6.8", "6.9", "6.10", "6.11", "6.12"],
+  "marco_atual": 7,
+  "bloco_atual": "7.8",
+  "blocos_completos": ["1.1", "1.2", "1.3", "1.4", "1.5", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7", "3.8", "4.1", "4.2", "4.3", "4.4", "4.5", "4.7", "4.8", "4.9", "4.10", "4.11", "4.12", "5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8", "5.9", "5.10", "5.11", "5.12", "6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "6.8", "6.9", "6.10", "6.11", "6.12", "7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7"],
   "blocos_em_andamento": [],
   "blockers": [],
-  "notas": "✅ MARCO 6 COMPLETO! Todos os blocos 6.1-6.12 implementados: Services, API Routes (14 endpoints), Sistema de Alertas Autom\u00e1ticos, Frontend API/hooks, Seed script. Background task di\u00e1ria configurada. Valida\u00e7\u00e3o CNAE, renova\u00e7\u00e3o de licen\u00e7as, gest\u00e3o de CNAEs e inscri\u00e7\u00f5es municipais funcionando.",
+  "notas": "🚧 MARCO 7 EM ANDAMENTO (44% completo). Backend 100% funcional: 11 Report Services, 2 Exporters (PDF/CSV), 10 endpoints REST, ReportRepository. Falta: Frontend (hooks, UI, components, portal), seed, testes.",
   "processo_validacao": {
     "descricao": "Checklist obrigatório após completar cada bloco",
     "passos": [
@@ -552,13 +552,159 @@
         "componentes_react": 0,
         "hooks_customizados": 1
       }
+    },
+    "fase_7_relatorios": {
+      "nome": "FASE 7: RELATÓRIOS (Marco 7)",
+      "status": "em_andamento",
+      "blocos": {
+        "7.1": {
+          "nome": "Contracts de Relatórios (Schemas + Types)",
+          "status": "completo",
+          "duracao_estimada": "2 horas",
+          "dependencias": ["6.12"],
+          "data_conclusao": "2025-10-31"
+        },
+        "7.2": {
+          "nome": "Models e Migrations",
+          "status": "completo",
+          "duracao_estimada": "3 horas",
+          "dependencias": ["7.1"],
+          "data_conclusao": "2025-10-31"
+        },
+        "7.3": {
+          "nome": "Report Services Financeiros (DRE, Fluxo Caixa, etc)",
+          "status": "completo",
+          "duracao_estimada": "4 horas",
+          "dependencias": ["7.2"],
+          "data_conclusao": "2025-10-31"
+        },
+        "7.4": {
+          "nome": "Report Services Operacionais",
+          "status": "completo",
+          "duracao_estimada": "3 horas",
+          "dependencias": ["7.2"],
+          "data_conclusao": "2025-10-31"
+        },
+        "7.5": {
+          "nome": "Export Engines (PDF + CSV)",
+          "status": "completo",
+          "duracao_estimada": "3 horas",
+          "dependencias": ["7.3", "7.4"],
+          "data_conclusao": "2025-10-31"
+        },
+        "7.6": {
+          "nome": "ReportRepository",
+          "status": "completo",
+          "duracao_estimada": "2 horas",
+          "dependencias": ["7.2"],
+          "data_conclusao": "2025-10-31"
+        },
+        "7.7": {
+          "nome": "API Routes de Relatórios",
+          "status": "completo",
+          "duracao_estimada": "3 horas",
+          "dependencias": ["7.5", "7.6"],
+          "data_conclusao": "2025-10-31"
+        },
+        "7.8": {
+          "nome": "API Client Frontend + Hooks",
+          "status": "pendente",
+          "duracao_estimada": "3 horas",
+          "dependencias": ["7.7"]
+        },
+        "7.9": {
+          "nome": "Dashboard Executivo",
+          "status": "pendente",
+          "duracao_estimada": "5 horas",
+          "dependencias": ["7.8"]
+        },
+        "7.10": {
+          "nome": "Report Builder",
+          "status": "pendente",
+          "duracao_estimada": "6 horas",
+          "dependencias": ["7.8"]
+        },
+        "7.11": {
+          "nome": "Componentes de Relatórios",
+          "status": "pendente",
+          "duracao_estimada": "4 horas",
+          "dependencias": ["7.10"]
+        },
+        "7.12": {
+          "nome": "Histórico e Templates UI",
+          "status": "pendente",
+          "duracao_estimada": "4 horas",
+          "dependencias": ["7.10"]
+        },
+        "7.13": {
+          "nome": "Portal Cliente - Relatórios",
+          "status": "pendente",
+          "duracao_estimada": "3 horas",
+          "dependencias": ["7.11"]
+        },
+        "7.14": {
+          "nome": "Seed Templates",
+          "status": "pendente",
+          "duracao_estimada": "2 horas",
+          "dependencias": ["7.7"]
+        },
+        "7.15": {
+          "nome": "Testes Unitários e Integração",
+          "status": "pendente",
+          "duracao_estimada": "5 horas",
+          "dependencias": ["7.7", "7.13"]
+        },
+        "7.16": {
+          "nome": "Documentação e Validação",
+          "status": "pendente",
+          "duracao_estimada": "3 horas",
+          "dependencias": ["7.14", "7.15"]
+        }
+      },
+      "resumo": {
+        "blocos_totais": 16,
+        "blocos_completos": 7,
+        "blocos_pendentes": 9,
+        "percentual_conclusao": 44,
+        "data_inicio": "2025-10-31",
+        "funcionalidades_implementadas": [
+          "✅ Contracts completos (Schemas + Types + Docs)",
+          "✅ 2 Models SQLAlchemy (ReportTemplate, ReportHistory)",
+          "✅ 3 enums PostgreSQL criados",
+          "✅ 11 Report Services (7 financeiros, 4 operacionais)",
+          "✅ PDFExporter e CSVExporter funcionais",
+          "✅ ReportRepository com CRUD completo",
+          "✅ 10 endpoints REST de relatórios",
+          "✅ Factory pattern para seleção de services",
+          "✅ RBAC integrado em todos endpoints",
+          "✅ Suporte a 11 tipos de relatórios diferentes"
+        ],
+        "funcionalidades_pendentes": [
+          "⏳ API client frontend e hooks",
+          "⏳ Dashboard executivo com widgets KPI",
+          "⏳ Report Builder com wizard",
+          "⏳ Componentes de renderização de relatórios",
+          "⏳ Interface de histórico e templates",
+          "⏳ Portal cliente para relatórios",
+          "⏳ Seed de templates de sistema",
+          "⏳ Testes unitários e integração",
+          "⏳ Documentação final e validação"
+        ],
+        "arquivos_criados": 35,
+        "linhas_codigo": 3000,
+        "endpoints_api": 10,
+        "services": 11,
+        "exporters": 2,
+        "componentes_react": 0
+      }
     }
   },
-  "last_update": "2025-10-31T23:59:00Z",
+  "last_update": "2025-10-31T11:00:00Z",
   "proximos_marcos": {
     "marco_5": "Financeiro (honorários, faturamento, recebimentos) - COMPLETO ✅",
     "marco_6": "Licenças (CNAE, Alvará, ISS) - COMPLETO ✅",
-    "marco_7": "Relatórios (dashboards, exports, analytics)"
+    "marco_7": "Relatórios (dashboards, exports, analytics) - EM ANDAMENTO 44% 🚧",
+    "marco_8": "Documentos e Arquivos (emails, anexos, storage)"
   },
   "infrastructure": {
     "docker": {

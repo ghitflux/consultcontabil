@@ -1,6 +1,6 @@
 # Marco 6: Licenças e Certificações - COMPLETO ✅
 
-**Data de Conclusão**: 2025-10-31  
+**Data de Conclusão**: 2025-10-31
 **Status**: 100% Completo
 
 ## 📋 Resumo Executivo
@@ -17,12 +17,12 @@ Implementação completa do módulo de Licenças, incluindo gestão de licenças
   - Renovação automática com recálculo de status
   - Cálculo automático de status baseado em data de vencimento
   - Timeline de eventos integrada
-  
+
 - **ExpirationAlertService** (`app/services/license/expiration_alert.py`)
   - Checagem de expirações em múltiplos thresholds (30, 15, 7, 1 dia)
   - Detecção de licenças vencidas
   - Resumo estruturado para notificações
-  
+
 - **CnaeValidator** (`app/services/cnae/validator.py`)
   - Validação de formato CNAE (0000-0/00)
   - Constraint de CNAE principal único por cliente
@@ -57,7 +57,7 @@ Implementação completa do módulo de Licenças, incluindo gestão de licenças
   - Execução diária às 8h configurada no `main.py`
   - Checagem de expirações em múltiplos thresholds
   - Logging estruturado
-  
+
 - **Integração no Lifespan**
   - Task iniciada no startup da aplicação
   - Cancelamento graceful no shutdown

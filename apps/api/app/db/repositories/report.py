@@ -1,0 +1,182 @@
+"""Report Repository - Data access layer for reports."""
+
+from datetime import datetime, timedelta
+from typing import Optional, Sequence
+from uuid import UUID
+
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.models.report import ReportFormat, ReportHistory, ReportStatus, ReportTemplate, ReportType
+from app.db.repositories.base import BaseRepository
+
+
+class ReportRepository(BaseRepository[ReportTemplate]):
+    """Repository for Report operations."""
+
+    def __init__(self, db: AsyncSession):
+        super().__init__(ReportTemplate, db)
+
+    async def get_user_templates(
+        self, user_id: UUID, include_system: bool = False
+    ) -> Sequence[ReportTemplate]:
+        """
+        Get templates for a user.
+
+        Args:
+            user_id: User UUID
+            include_system: Include system templates
+
+        Returns:
+            List of templates
+        """
+        conditions = []
+
+        if include_system:
+            conditions.append(
+                (ReportTemplate.created_by_id == user_id) | (ReportTemplate.is_system.is_(True))
+            )
+        else:
+            conditions.append(ReportTemplate.created_by_id == user_id)
+
+        stmt = select(ReportTemplate).where(and_(*conditions)).order_by(
+            ReportTemplate.is_system.desc(), ReportTemplate.name
+        )
+
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
+
+    async def get_system_templates(self) -> Sequence[ReportTemplate]:
+        """
+        Get all system templates.
+
+        Returns:
+            List of system templates
+        """
+        stmt = (
+            select(ReportTemplate)
+            .where(ReportTemplate.is_system.is_(True))
+            .order_by(ReportTemplate.name)
+        )
+
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
+
+    async def save_template_history(
+        self,
+        user_id: UUID,
+        report_type: ReportType,
+        filters_used: dict,
+        format: ReportFormat,
+        file_path: Optional[str] = None,
+        file_size: Optional[int] = None,
+        template_id: Optional[UUID] = None,
+        expires_at: Optional[datetime] = None,
+        status: ReportStatus = ReportStatus.COMPLETED,
+    ) -> ReportHistory:
+        """
+        Save report generation history.
+
+        Args:
+            user_id: User who generated the report
+            report_type: Type of report
+            filters_used: Filters applied
+            format: Export format
+            file_path: Path to generated file
+            file_size: File size in bytes
+            template_id: Template used (optional)
+            expires_at: Expiration datetime
+            status: Generation status
+
+        Returns:
+            Created ReportHistory instance
+        """
+        if not expires_at:
+            expires_at = datetime.utcnow() + timedelta(days=7)
+
+        history = ReportHistory(
+            template_id=template_id,
+            user_id=user_id,
+            report_type=report_type,
+            filters_used=filters_used,
+            format=format,
+            file_path=file_path,
+            file_size=file_size,
+            expires_at=expires_at,
+            status=status,
+        )
+
+        self.db.add(history)
+        await self.db.flush()
+        await self.db.refresh(history)
+
+        return history
+
+    async def get_history(
+        self,
+        user_id: UUID,
+        report_type: Optional[str] = None,
+        format: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> tuple[Sequence[ReportHistory], int]:
+        """
+        Get report history for a user with pagination.
+
+        Args:
+            user_id: User UUID
+            report_type: Filter by report type
+            format: Filter by format
+            skip: Number of records to skip
+            limit: Maximum number of records
+
+        Returns:
+            Tuple of (history list, total count)
+        """
+        conditions = [ReportHistory.user_id == user_id]
+
+        if report_type:
+            conditions.append(ReportHistory.report_type == report_type)
+
+        if format:
+            conditions.append(ReportHistory.format == format)
+
+        # Count query
+        count_stmt = select(func.count()).select_from(ReportHistory).where(and_(*conditions))
+        total = await self.db.scalar(count_stmt) or 0
+
+        # Data query
+        stmt = (
+            select(ReportHistory)
+            .where(and_(*conditions))
+            .order_by(ReportHistory.generated_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+
+        result = await self.db.execute(stmt)
+        history_list = result.scalars().all()
+
+        return history_list, total
+
+    async def cleanup_expired_files(self) -> int:
+        """
+        Remove expired report files from history.
+
+        Returns:
+            Number of records cleaned up
+        """
+        now = datetime.utcnow()
+
+        stmt = select(ReportHistory).where(ReportHistory.expires_at <= now)
+        result = await self.db.execute(stmt)
+        expired_records = result.scalars().all()
+
+        count = len(expired_records)
+        for record in expired_records:
+            await self.db.delete(record)
+
+        await self.db.flush()
+
+        return count
+
