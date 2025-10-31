@@ -1,22 +1,25 @@
 # Marco 7: Relatórios - Status Atual
 
-**Data**: 2025-10-31  
-**Progresso**: 44% (7/16 blocos completos)  
+**Data**: 2025-10-31
+**Progresso**: 44% (7/16 blocos completos)
 **Status**: Backend 100% ✅ | Frontend 0% ⏳
 
 ## ✅ Blocos Completos
 
 ### 7.1 - Contracts
+
 - Schemas Pydantic (`apps/api/app/schemas/report.py`)
 - Types TypeScript (`apps/web/src/types/report.ts`)
 - Documentação API (`docs/contracts/report-api.md`)
 
 ### 7.2 - Models e Migration
+
 - 2 Models SQLAlchemy (ReportTemplate, ReportHistory)
 - Migration criada e aplicada
 - 3 enums PostgreSQL
 
 ### 7.3 - Report Services Financeiros
+
 - BaseReportService (classe abstrata)
 - DREReportService
 - CashFlowReportService
@@ -27,22 +30,26 @@
 - KPIReportService
 
 ### 7.4 - Report Services Operacionais
+
 - ClientReportService
 - ObligationReportService
 - LicenseReportService
 - AuditReportService
 
 ### 7.5 - Export Engines
+
 - PDFExporter (ReportLab)
 - CSVExporter (Excel-compatible)
 
 ### 7.6 - ReportRepository
+
 - CRUD completo
 - Gerenciamento de templates
 - Histórico paginado
 - Cleanup de arquivos expirados
 
 ### 7.7 - API Routes
+
 - 10 endpoints REST
 - Factory pattern para services
 - RBAC integrado
@@ -87,4 +94,3 @@
 - ✅ Sem erros de linting
 - ✅ Contracts completos
 - ✅ Services testáveis
-

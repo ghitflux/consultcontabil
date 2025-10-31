@@ -35,7 +35,7 @@ Implementação parcial do módulo de Relatórios, incluindo infraestrutura back
 - **ReportTemplate**: Templates reutilizáveis de relatórios
   - Campos: name, description, report_type, default_filters (JSON), default_customizations (JSON), is_system, created_by_id
   - 3 indexes: name, report_type, created_by_id
-  
+
 - **ReportHistory**: Histórico de gerações
   - Campos: template_id, user_id, report_type, filters_used (JSON), format, file_path, file_size, generated_at, expires_at, status
   - 7 indexes incluindo composite (user_id, report_type)
@@ -86,7 +86,7 @@ Implementação parcial do módulo de Relatórios, incluindo infraestrutura back
   - Tabelas formatadas
   - Footer com timestamp
   - Estrutura modular para diferentes tipos
-  
+
 - **CSVExporter**: Compatível com Excel
   - UTF-8 BOM para Excel
   - Separador ponto-e-vírgula

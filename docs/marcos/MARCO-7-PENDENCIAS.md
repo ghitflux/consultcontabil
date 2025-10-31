@@ -1,6 +1,6 @@
 # Marco 7: Relatórios - Pendências Fronteira
 
-**Backend**: ✅ 100% Completo  
+**Backend**: ✅ 100% Completo
 **Frontend**: ⏳ 0% Implementado
 
 ## 📋 Resumo
@@ -15,20 +15,21 @@ O backend de relatórios está totalmente funcional com 11 services implementado
 
 ```typescript
 // Funções necessárias:
-- getReportTypes()
-- getTemplates()
-- createTemplate(data)
-- updateTemplate(id, data)
-- deleteTemplate(id)
-- previewReport(request)
-- exportReport(request)
-- downloadReport(id)
-- getHistory(filters)
+-getReportTypes() -
+  getTemplates() -
+  createTemplate(data) -
+  updateTemplate(id, data) -
+  deleteTemplate(id) -
+  previewReport(request) -
+  exportReport(request) -
+  downloadReport(id) -
+  getHistory(filters);
 ```
 
 ### 2. Custom Hooks (Bloco 7.8)
 
-**Arquivos**: 
+**Arquivos**:
+
 - `apps/web/src/hooks/useReports.ts`
 - `apps/web/src/hooks/useReportPreview.ts`
 - `apps/web/src/hooks/useReportExport.ts`
@@ -38,6 +39,7 @@ O backend de relatórios está totalmente funcional com 11 services implementado
 **Arquivo**: `apps/web/app/(dashboard)/relatorios/page.tsx`
 
 **Componentes necessários**:
+
 - Widget de KPIs principais
 - Gráfico de receita vs despesa
 - Gráfico de aging de recebíveis
@@ -49,6 +51,7 @@ O backend de relatórios está totalmente funcional com 11 services implementado
 ### 4. Report Builder (Bloco 7.10)
 
 **Componentes**:
+
 - Wizard de seleção de tipo
 - Configuração de filtros (datas, clientes)
 - Customização (campos, agrupamento, ordenação)
@@ -58,6 +61,7 @@ O backend de relatórios está totalmente funcional com 11 services implementado
 ### 5. Componentes de Relatórios (Bloco 7.11)
 
 **Componentes específicos**:
+
 - DREVisualizer.tsx
 - CashFlowChart.tsx
 - AgingReportTable.tsx
@@ -70,6 +74,7 @@ O backend de relatórios está totalmente funcional com 11 services implementado
 **Página**: `apps/web/app/(dashboard)/relatorios/historico/page.tsx`
 
 **Features**:
+
 - Lista de relatórios gerados
 - Filtros por tipo, período, formato
 - Biblioteca de templates visível
@@ -80,6 +85,7 @@ O backend de relatórios está totalmente funcional com 11 services implementado
 **Página**: `apps/web/app/portal/relatorios/page.tsx`
 
 **Features simplificadas**:
+
 - Relatórios disponíveis para o cliente
 - Visualizações apenas (sem export se necessário)
 - Histórico próprio
@@ -89,6 +95,7 @@ O backend de relatórios está totalmente funcional com 11 services implementado
 **Arquivo**: `apps/api/scripts/seed_reports.py`
 
 **Templates de sistema a criar**:
+
 - DRE Mensal
 - Fluxo de Caixa Trimestral
 - Receitas por Cliente Anual
@@ -98,11 +105,13 @@ O backend de relatórios está totalmente funcional com 11 services implementado
 ### 9. Testes (Bloco 7.15)
 
 **Backend**:
+
 - Unit tests para cada Report Service
 - Integration tests para API routes
 - Tests para exporters
 
 **Frontend**:
+
 - Component tests
 - Hook tests
 
@@ -144,4 +153,3 @@ pnpm add -D @types/date-fns
 - **Docs**: 3h
 
 **Total**: ~35 horas para completar
-
