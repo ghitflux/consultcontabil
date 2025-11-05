@@ -5,7 +5,8 @@ ObligationType model for storing obligation type definitions.
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
@@ -60,7 +61,13 @@ class ObligationType(Base):
 
     # Generation settings
     recurrence = Column(
-        Enum(ObligationRecurrence),
+        SQLEnum(
+            ObligationRecurrence,
+            name="obligationrecurrence",
+            create_type=False,
+            native_enum=False,
+            values_callable=lambda x: [e.value for e in ObligationRecurrence]
+        ),
         nullable=False,
         comment="Periodicidade (mensal, trimestral, etc)",
     )

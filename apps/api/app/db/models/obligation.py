@@ -5,7 +5,8 @@ Obligation model for storing fiscal obligations.
 from datetime import date, datetime
 from uuid import uuid4
 
-from sqlalchemy import Column, Date, DateTime, Enum, ForeignKey, Index, String, Text
+from sqlalchemy import Column, Date, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -44,14 +45,26 @@ class Obligation(Base):
     # Obligation details
     due_date = Column(Date, nullable=False, index=True, comment="Data de vencimento")
     status = Column(
-        Enum(ObligationStatus),
+        SQLEnum(
+            ObligationStatus,
+            name="obligationstatus",
+            create_type=False,
+            native_enum=False,
+            values_callable=lambda x: [e.value for e in ObligationStatus]
+        ),
         default=ObligationStatus.PENDENTE,
         nullable=False,
         index=True,
         comment="Status da obrigação",
     )
     priority = Column(
-        Enum(ObligationPriority),
+        SQLEnum(
+            ObligationPriority,
+            name="obligationpriority",
+            create_type=False,
+            native_enum=False,
+            values_callable=lambda x: [e.value for e in ObligationPriority]
+        ),
         default=ObligationPriority.MEDIA,
         nullable=False,
         comment="Prioridade",

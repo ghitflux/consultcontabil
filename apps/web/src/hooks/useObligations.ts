@@ -39,20 +39,20 @@ export function useObligations(options: UseObligationsOptions = {}) {
 
   const fetchObligations = useCallback(
     async (skip = 0) => {
-      if (!clientId) {
-        return;
-      }
-
       try {
         setLoading(true);
         setError(null);
 
         const token = localStorage.getItem("access_token");
         const params = new URLSearchParams({
-          client_id: clientId,
           skip: skip.toString(),
           limit: limit.toString(),
         });
+
+        // Adicionar client_id apenas se fornecido
+        if (clientId) {
+          params.append("client_id", clientId);
+        }
 
         if (status) params.append("status", status);
         if (year) params.append("year", year.toString());
@@ -72,7 +72,15 @@ export function useObligations(options: UseObligationsOptions = {}) {
         }
 
         const data = await response.json();
-        setObligations(data.items);
+        // Transform obligations to include client info if not present
+        const transformedItems = data.items.map((item: any) => ({
+          ...item,
+          client_name: item.client_name || item.client?.razao_social || "",
+          client_cnpj: item.client_cnpj || item.client?.cnpj || "",
+          obligation_type_name: item.obligation_type_name || item.obligation_type?.name || "",
+          obligation_type_code: item.obligation_type_code || item.obligation_type?.code || "",
+        }));
+        setObligations(transformedItems);
         setTotal(data.total);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
@@ -238,7 +246,7 @@ export function useObligations(options: UseObligationsOptions = {}) {
   };
 
   useEffect(() => {
-    if (autoFetch && clientId) {
+    if (autoFetch) {
       fetchObligations(page * limit);
     }
   }, [autoFetch, clientId, status, year, month, page, limit, fetchObligations]);

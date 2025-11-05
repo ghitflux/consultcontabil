@@ -1,147 +1,109 @@
 """
-Seed script for licenses, CNAEs, and municipal registrations.
+Script to seed licenses for clients.
 """
 
 import asyncio
+import sys
+from pathlib import Path
 from datetime import date, timedelta
-from uuid import UUID
 
-from app.core.database import db_manager
-from app.db.models.cnae import Cnae
-from app.db.models.license import License
-from app.db.models.municipal_registration import MunicipalRegistration
+# Add parent directory to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+
+from app.core.config import get_settings
 from app.db.models.client import Client
-from app.db.repositories.client import ClientRepository
-from app.schemas.cnae import CnaeType
-from app.schemas.license import LicenseStatus, LicenseType
-from app.schemas.municipal_registration import MunicipalRegistrationStatus, StateCode
+from app.db.models.license import License
+from app.schemas.license import LicenseType, LicenseStatus
+
+settings = get_settings()
 
 
-async def seed_licenses() -> None:
-    """Seed licenses, CNAEs, and municipal registrations."""
-    print("🌱 Starting license data seed...")
+async def seed_licenses():
+    """Seed licenses for clients."""
+    DATABASE_URL = str(settings.DATABASE_URL)
 
-    async for session in db_manager.get_session():
-        try:
-            # Get clients
-            client_repo = ClientRepository(session)
-            clients = await client_repo.list_all(limit=10)
+    engine = create_async_engine(DATABASE_URL, echo=False)
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-            if not clients:
-                print("❌ No clients found. Please seed clients first.")
-                return
+    async with async_session() as session:
+        # Get all active clients
+        from sqlalchemy import select
+        result = await session.execute(select(Client).where(Client.status == "ativo"))
+        clients = result.scalars().all()
 
-            print(f"📋 Found {len(clients)} clients")
+        if not clients:
+            print("No active clients found. Please run seed_clients.py first.")
+            await engine.dispose()
+            return
 
-            # Seed CNAEs
-            print("\n📝 Seeding CNAEs...")
-            cnae_count = 0
-            for client in clients[:5]:  # Only first 5 clients
-                # Primary CNAE
-                primary_cnae = Cnae(
+        # Check if licenses already exist
+        result = await session.execute(select(License))
+        existing = result.scalars().all()
+
+        if existing:
+            print(f"Found {len(existing)} existing licenses. Skipping seed.")
+            await engine.dispose()
+            return
+
+        license_types_data = [
+            {
+                "type": LicenseType.ALVARA_FUNCIONAMENTO,
+                "authority": "Prefeitura Municipal",
+                "duration_days": 365,
+            },
+            {
+                "type": LicenseType.INSCRICAO_ESTADUAL,
+                "authority": "Secretaria da Fazenda Estadual",
+                "duration_days": None,  # Permanent
+            },
+            {
+                "type": LicenseType.INSCRICAO_MUNICIPAL,
+                "authority": "Prefeitura Municipal",
+                "duration_days": None,  # Permanent
+            },
+            {
+                "type": LicenseType.CERTIFICADO_DIGITAL,
+                "authority": "Receita Federal",
+                "duration_days": 365,
+            },
+        ]
+
+        licenses_created = 0
+        for client in clients:
+            for i, lt_data in enumerate(license_types_data):
+                issue_date = date.today() - timedelta(days=30 * (i + 1))
+                expiration_date = None
+                if lt_data["duration_days"]:
+                    expiration_date = issue_date + timedelta(days=lt_data["duration_days"])
+
+                # Determine status
+                if expiration_date and expiration_date < date.today():
+                    status = LicenseStatus.VENCIDA
+                elif expiration_date and expiration_date < date.today() + timedelta(days=30):
+                    status = LicenseStatus.VENCENDO
+                else:
+                    status = LicenseStatus.ATIVA
+
+                license_obj = License(
                     client_id=client.id,
-                    cnae_code="6201-5/00",  # Desenvolvimento de programas de computador
-                    description="Desenvolvimento de programas de computador sob medida",
-                    cnae_type=CnaeType.PRINCIPAL,
-                    is_active=True,
+                    license_type=lt_data["type"],
+                    registration_number=f"{lt_data['type'].value[:3].upper()}-{client.cnpj[:8]}-{i+1:03d}",
+                    issuing_authority=lt_data["authority"],
+                    issue_date=issue_date,
+                    expiration_date=expiration_date,
+                    status=status,
+                    notes=f"Licença gerada automaticamente para {client.razao_social}",
                 )
-                session.add(primary_cnae)
-                cnae_count += 1
+                session.add(license_obj)
+                licenses_created += 1
 
-                # Secondary CNAEs
-                secondary_cnaes = [
-                    ("6202-3/00", "Desenvolvimento e licenciamento de programas de computador customizáveis"),
-                    ("6319-4/00", "Processamento de dados, hospedagem na internet e atividades relacionadas"),
-                ]
-                for code, desc in secondary_cnaes:
-                    cnae = Cnae(
-                        client_id=client.id,
-                        cnae_code=code,
-                        description=desc,
-                        cnae_type=CnaeType.SECUNDARIO,
-                        is_active=True,
-                    )
-                    session.add(cnae)
-                    cnae_count += 1
+        await session.commit()
+        print(f"Created {licenses_created} licenses for {len(clients)} clients")
 
-            await session.commit()
-            print(f"✅ Created {cnae_count} CNAEs")
-
-            # Seed Licenses
-            print("\n📜 Seeding Licenses...")
-            today = date.today()
-            license_types = [
-                LicenseType.ALVARA_FUNCIONAMENTO,
-                LicenseType.CERTIFICADO_DIGITAL,
-                LicenseType.LICENCA_SANITARIA,
-                LicenseType.LICENCA_BOMBEIROS,
-            ]
-
-            license_count = 0
-            for i, client in enumerate(clients[:5]):
-                # Create 3 licenses per client
-                for j, license_type in enumerate(license_types[:3]):
-                    expiration_days = [30, 60, 90, -10, -30][(i * 3 + j) % 5]  # Mix of expiring and expired
-                    expiration_date = today + timedelta(days=expiration_days)
-
-                    # Determine status
-                    if expiration_days < 0:
-                        status = LicenseStatus.VENCIDA
-                    elif expiration_days <= 30:
-                        status = LicenseStatus.PENDENTE_RENOVACAO
-                    else:
-                        status = LicenseStatus.ATIVA
-
-                    license_obj = License(
-                        client_id=client.id,
-                        license_type=license_type,
-                        registration_number=f"LIC-{i+1:03d}-{j+1:02d}",
-                        issuing_authority=f"Órgão Emissor {i+1}",
-                        issue_date=today - timedelta(days=365),
-                        expiration_date=expiration_date if j < 2 else None,  # Some without expiration
-                        status=status,
-                        notes=f"Licença de exemplo para {client.razao_social}",
-                    )
-                    session.add(license_obj)
-                    license_count += 1
-
-            await session.commit()
-            print(f"✅ Created {license_count} licenses")
-
-            # Seed Municipal Registrations
-            print("\n🏛️ Seeding Municipal Registrations...")
-            states = [StateCode.SP, StateCode.RJ, StateCode.MG]
-            cities = ["São Paulo", "Rio de Janeiro", "Belo Horizonte"]
-
-            registration_count = 0
-            for i, client in enumerate(clients[:5]):
-                state = states[i % len(states)]
-                city = cities[i % len(cities)]
-
-                registration = MunicipalRegistration(
-                    client_id=client.id,
-                    city=city,
-                    state=state,
-                    registration_number=f"IM-{i+1:05d}",
-                    issue_date=today - timedelta(days=180),
-                    status=MunicipalRegistrationStatus.ATIVA,
-                    notes=f"Inscrição municipal em {city}, {state.value}",
-                )
-                session.add(registration)
-                registration_count += 1
-
-            await session.commit()
-            print(f"✅ Created {registration_count} municipal registrations")
-
-            print("\n✅ License data seed completed!")
-            break
-
-        except Exception as e:
-            await session.rollback()
-            print(f"❌ Error seeding license data: {e}")
-            raise
-        finally:
-            break
+    await engine.dispose()
 
 
 if __name__ == "__main__":

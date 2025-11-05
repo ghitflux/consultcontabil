@@ -31,6 +31,29 @@ from app.websockets.manager import manager as websocket_manager
 router = APIRouter()
 
 
+def _obligation_to_response(obligation) -> ObligationResponse:
+    """Convert Obligation model to ObligationResponse schema."""
+    ob_dict = {
+        "id": obligation.id,
+        "client_id": obligation.client_id,
+        "client_name": obligation.client.razao_social if obligation.client else "",
+        "client_cnpj": obligation.client.cnpj if obligation.client else "",
+        "obligation_type_id": obligation.obligation_type_id,
+        "obligation_type_name": obligation.obligation_type.name if obligation.obligation_type else "",
+        "obligation_type_code": obligation.obligation_type.code if obligation.obligation_type else "",
+        "due_date": obligation.due_date,
+        "status": obligation.status,
+        "priority": obligation.priority,
+        "description": obligation.description,
+        "receipt_url": obligation.receipt_url,
+        "completed_at": obligation.completed_at,
+        "completed_by_name": None,
+        "created_at": obligation.created_at,
+        "updated_at": obligation.updated_at,
+    }
+    return ObligationResponse.model_validate(ob_dict)
+
+
 @router.get("", response_model=ObligationListResponse)
 async def list_obligations(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -45,7 +68,7 @@ async def list_obligations(
     """
     List obligations with filters.
 
-    - Admin/Func: Can see all obligations
+    - Admin/Func: Can see all obligations (client_id optional)
     - Client: Can only see their own obligations
     """
     repo = ObligationRepository(db)
@@ -61,12 +84,7 @@ async def list_obligations(
                 detail="Client profile not found",
             )
         client_id = client.id
-
-    if not client_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="client_id is required",
-        )
+    # Admin/Func can see all obligations if client_id is not provided
 
     obligations, total = await repo.list_by_client(
         client_id=client_id,
@@ -77,8 +95,11 @@ async def list_obligations(
         limit=limit,
     )
 
+    # Convert to response format with client info
+    items = [_obligation_to_response(ob) for ob in obligations]
+
     return {
-        "items": obligations,
+        "items": items,
         "total": total,
         "skip": skip,
         "limit": limit,
@@ -111,7 +132,7 @@ async def get_obligation(
                 detail="Not authorized to access this obligation",
             )
 
-    return obligation
+    return _obligation_to_response(obligation)
 
 
 @router.post("/generate", response_model=ObligationGenerateResponse)
@@ -234,7 +255,10 @@ async def upload_receipt(
         notes=notes,
     )
 
-    return obligation
+    # Reload with relations
+    repo = ObligationRepository(db)
+    obligation = await repo.get_by_id_with_relations(obligation_id)
+    return _obligation_to_response(obligation)
 
 
 @router.put("/{obligation_id}/due-date", response_model=ObligationResponse)
@@ -263,7 +287,10 @@ async def update_due_date(
         performed_by_id=current_user.id,
     )
 
-    return obligation
+    # Reload with relations
+    repo = ObligationRepository(db)
+    obligation = await repo.get_by_id_with_relations(obligation_id)
+    return _obligation_to_response(obligation)
 
 
 @router.post("/{obligation_id}/cancel", response_model=ObligationResponse)
@@ -291,7 +318,10 @@ async def cancel_obligation(
         performed_by_id=current_user.id,
     )
 
-    return obligation
+    # Reload with relations
+    repo = ObligationRepository(db)
+    obligation = await repo.get_by_id_with_relations(obligation_id)
+    return _obligation_to_response(obligation)
 
 
 @router.post("/{obligation_id}/reopen", response_model=ObligationResponse)
@@ -319,7 +349,10 @@ async def reopen_obligation(
         notes=notes,
     )
 
-    return obligation
+    # Reload with relations
+    repo = ObligationRepository(db)
+    obligation = await repo.get_by_id_with_relations(obligation_id)
+    return _obligation_to_response(obligation)
 
 
 @router.get("/{obligation_id}/events", response_model=list[ObligationEventResponse])
@@ -386,7 +419,15 @@ async def get_upcoming_obligations(
         else:
             obligations = []
 
-    return obligations
+    # Load relations and convert to response
+    repo = ObligationRepository(db)
+    obligations_with_relations = []
+    for ob in obligations:
+        ob_with_relations = await repo.get_by_id_with_relations(ob.id)
+        if ob_with_relations:
+            obligations_with_relations.append(_obligation_to_response(ob_with_relations))
+
+    return obligations_with_relations
 
 
 @router.get("/overdue/list", response_model=list[ObligationResponse])
@@ -412,4 +453,12 @@ async def get_overdue_obligations(
         else:
             obligations = []
 
-    return obligations
+    # Load relations and convert to response
+    repo = ObligationRepository(db)
+    obligations_with_relations = []
+    for ob in obligations:
+        ob_with_relations = await repo.get_by_id_with_relations(ob.id)
+        if ob_with_relations:
+            obligations_with_relations.append(_obligation_to_response(ob_with_relations))
+
+    return obligations_with_relations

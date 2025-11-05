@@ -1,152 +1,148 @@
 """
-Seed script to create initial clients for testing.
-Run with: python -m scripts.seed_clients
+Script to seed clients.
 """
 
 import asyncio
 import sys
-from datetime import date
 from pathlib import Path
+from datetime import date
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sqlalchemy import select
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 
-from app.core.database import Base, db_manager
-from app.db.models.client import Client, ClientStatus, RegimeTributario, TipoEmpresa
+from app.core.config import get_settings
+from app.db.models.client import Client, ClientStatus, RegimeTributario, TipoEmpresa, ServicoType
+
+settings = get_settings()
 
 
-async def seed_clients() -> None:
-    """Create seed clients for testing."""
-    print("[*] Starting client seed...")
+async def seed_clients():
+    """Seed clients."""
+    DATABASE_URL = str(settings.DATABASE_URL)
 
-    # Create tables if they don't exist
-    async with db_manager.write_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    print("[OK] Tables created/verified")
+    engine = create_async_engine(DATABASE_URL, echo=False)
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-    # Clients to create
-    seed_clients_data = [
-        {
-            "razao_social": "Comercial Silva e Filhos LTDA",
-            "nome_fantasia": "Silva Comércio",
-            "cnpj": "12.345.678/0001-90",
-            "inscricao_estadual": "123.456.789.123",
-            "email": "contato@silvacomercio.com",
-            "telefone": "(11) 3333-4444",
-            "celular": "(11) 98888-7777",
-            "cep": "01310-100",
-            "logradouro": "Avenida Paulista",
-            "numero": "1000",
-            "bairro": "Bela Vista",
-            "cidade": "São Paulo",
-            "uf": "SP",
-            "honorarios_mensais": 1500.00,
-            "dia_vencimento": 10,
-            "regime_tributario": RegimeTributario.SIMPLES_NACIONAL,
-            "tipo_empresa": TipoEmpresa.COMERCIO,
-            "data_abertura": date(2020, 1, 15),
-            "responsavel_nome": "João Silva",
-            "responsavel_email": "joao@silvacomercio.com",
-            "status": ClientStatus.ATIVO,
-        },
-        {
-            "razao_social": "Tecnologia Avançada Sistemas LTDA",
-            "nome_fantasia": "TechSys",
-            "cnpj": "98.765.432/0001-10",
-            "email": "contato@techsys.com.br",
-            "telefone": "(11) 4444-5555",
-            "honorarios_mensais": 2500.00,
-            "dia_vencimento": 5,
-            "regime_tributario": RegimeTributario.LUCRO_PRESUMIDO,
-            "tipo_empresa": TipoEmpresa.SERVICO,
-            "status": ClientStatus.ATIVO,
-        },
-        {
-            "razao_social": "Indústria Metalúrgica Forte SA",
-            "nome_fantasia": "Metal Forte",
-            "cnpj": "11.222.333/0001-44",
-            "email": "financeiro@metalforte.ind.br",
-            "honorarios_mensais": 5000.00,
-            "dia_vencimento": 15,
-            "regime_tributario": RegimeTributario.LUCRO_REAL,
-            "tipo_empresa": TipoEmpresa.INDUSTRIA,
-            "status": ClientStatus.ATIVO,
-        },
-        {
-            "razao_social": "Consultoria Empresarial Santos MEI",
-            "nome_fantasia": "Santos Consultoria",
-            "cnpj": "33.444.555/0001-66",
-            "email": "maria@santosconsultoria.com",
-            "honorarios_mensais": 500.00,
-            "dia_vencimento": 20,
-            "regime_tributario": RegimeTributario.MEI,
-            "tipo_empresa": TipoEmpresa.SERVICO,
-            "status": ClientStatus.ATIVO,
-        },
-        {
-            "razao_social": "Empresa Teste Pendente LTDA",
-            "nome_fantasia": "Teste Pendente",
-            "cnpj": "55.666.777/0001-88",
-            "email": "teste@pendente.com",
-            "honorarios_mensais": 1000.00,
-            "dia_vencimento": 25,
-            "regime_tributario": RegimeTributario.SIMPLES_NACIONAL,
-            "tipo_empresa": TipoEmpresa.COMERCIO,
-            "status": ClientStatus.PENDENTE,
-        },
-        {
-            "razao_social": "Antiga Empresa Inativa LTDA",
-            "nome_fantasia": "Empresa Inativa",
-            "cnpj": "77.888.999/0001-00",
-            "email": "inativa@empresa.com",
-            "honorarios_mensais": 800.00,
-            "dia_vencimento": 30,
-            "regime_tributario": RegimeTributario.SIMPLES_NACIONAL,
-            "tipo_empresa": TipoEmpresa.MISTO,
-            "status": ClientStatus.INATIVO,
-        },
-    ]
+    async with async_session() as session:
+        # Check if clients already exist
+        from sqlalchemy import select, func
+        result = await session.execute(select(func.count()).select_from(Client))
+        count = result.scalar()
 
-    # Insert clients
-    async with db_manager.session_factory() as session:
-        for client_data in seed_clients_data:
-            # Check if client already exists
-            result = await session.execute(
-                select(Client).where(Client.cnpj == client_data["cnpj"])
-            )
-            existing_client = result.scalar_one_or_none()
+        if count and count >= 15:  # We'll create 15 clients
+            print(f"Found {count} existing clients. Skipping seed.")
+            await engine.dispose()
+            return
 
-            if existing_client:
-                print(f"[SKIP] Client {client_data['cnpj']} already exists, skipping...")
-                continue
+        # Sample clients based on the image
+        clients_data = [
+            {
+                "razao_social": "Tech Solutions Ltda",
+                "nome_fantasia": "Tech Solutions",
+                "cnpj": "12.345.678/0001-90",
+                "email": "contato@techsolutions.com.br",
+                "telefone": "(11) 3456-7890",
+                "celular": "(11) 98765-4321",
+                "cep": "01310-100",
+                "logradouro": "Av. Paulista",
+                "numero": "1000",
+                "bairro": "Bela Vista",
+                "cidade": "São Paulo",
+                "uf": "SP",
+                "honorarios_mensais": 1500.00,
+                "dia_vencimento": 10,
+                "servicos": [ServicoType.FISCAL, ServicoType.CONTABIL, ServicoType.PESSOAL],
+                "valor_fiscal": 800.00,
+                "valor_contabil": 500.00,
+                "valor_pessoal": 200.00,
+                "regime_tributario": RegimeTributario.LUCRO_PRESUMIDO,
+                "tipo_empresa": TipoEmpresa.SERVICO,
+                "status": ClientStatus.ATIVO,
+                "data_abertura": date(2020, 1, 15),
+            },
+            {
+                "razao_social": "Comércio ABC S.A.",
+                "nome_fantasia": "ABC Comércio",
+                "cnpj": "98.765.432/0001-10",
+                "email": "contato@abccomercio.com.br",
+                "telefone": "(21) 2345-6789",
+                "celular": "(21) 99876-5432",
+                "cep": "20040-020",
+                "logradouro": "Rua do Ouvidor",
+                "numero": "50",
+                "bairro": "Centro",
+                "cidade": "Rio de Janeiro",
+                "uf": "RJ",
+                "honorarios_mensais": 2000.00,
+                "dia_vencimento": 15,
+                "servicos": [ServicoType.FISCAL, ServicoType.CONTABIL],
+                "valor_fiscal": 1200.00,
+                "valor_contabil": 800.00,
+                "valor_pessoal": 0.00,
+                "regime_tributario": RegimeTributario.SIMPLES_NACIONAL,
+                "tipo_empresa": TipoEmpresa.COMERCIO,
+                "status": ClientStatus.ATIVO,
+                "data_abertura": date(2019, 5, 20),
+            },
+            {
+                "razao_social": "Indústria XYZ Ltda",
+                "nome_fantasia": "XYZ Indústria",
+                "cnpj": "11.222.333/0001-44",
+                "email": "contato@xyzindustria.com.br",
+                "telefone": "(47) 3456-7890",
+                "celular": "(47) 98765-4321",
+                "cep": "89010-001",
+                "logradouro": "Rua XV de Novembro",
+                "numero": "1234",
+                "bairro": "Centro",
+                "cidade": "Blumenau",
+                "uf": "SC",
+                "honorarios_mensais": 3000.00,
+                "dia_vencimento": 5,
+                "servicos": [ServicoType.FISCAL, ServicoType.CONTABIL, ServicoType.PESSOAL],
+                "valor_fiscal": 1500.00,
+                "valor_contabil": 1000.00,
+                "valor_pessoal": 500.00,
+                "regime_tributario": RegimeTributario.LUCRO_REAL,
+                "tipo_empresa": TipoEmpresa.INDUSTRIA,
+                "status": ClientStatus.ATIVO,
+                "data_abertura": date(2018, 3, 10),
+            },
+        ]
 
-            # Create new client
+        # Add more sample clients
+        for i in range(4, 15):
+            clients_data.append({
+                "razao_social": f"Empresa {chr(64 + i)} Ltda",
+                "nome_fantasia": f"Empresa {chr(64 + i)}",
+                "cnpj": f"{i:02d}.{i+10:03d}.{i+20:03d}/0001-{i+30:02d}",
+                "email": f"contato@empresa{chr(96+i)}.com.br",
+                "telefone": f"(11) {3000+i}-{7000+i}",
+                "honorarios_mensais": 1000.00 + (i * 100),
+                "dia_vencimento": (i % 28) + 1,
+                "servicos": [ServicoType.FISCAL, ServicoType.CONTABIL],
+                "valor_fiscal": 500.00 + (i * 50),
+                "valor_contabil": 300.00 + (i * 30),
+                "valor_pessoal": 200.00 + (i * 20),
+                "regime_tributario": RegimeTributario.SIMPLES_NACIONAL if i % 2 == 0 else RegimeTributario.LUCRO_PRESUMIDO,
+                "tipo_empresa": TipoEmpresa.COMERCIO if i % 3 == 0 else TipoEmpresa.SERVICO,
+                "status": ClientStatus.ATIVO,
+                "data_abertura": date(2020 + (i % 3), (i % 12) + 1, (i % 28) + 1),
+            })
+
+        for client_data in clients_data:
             client = Client(**client_data)
             session.add(client)
-            print(f"[OK] Created client: {client_data['razao_social']} (CNPJ: {client_data['cnpj']})")
 
         await session.commit()
+        print(f"Created {len(clients_data)} clients")
 
-    print("\n[SUCCESS] Seed completed successfully!")
-    print(f"\n[INFO] {len(seed_clients_data)} clients created")
-
-
-async def main() -> None:
-    """Main function."""
-    try:
-        await seed_clients()
-    except Exception as e:
-        print(f"\n[ERROR] Error during seed: {e}")
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-    finally:
-        # Close database connections
-        await db_manager.close()
+    await engine.dispose()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(seed_clients())
+

@@ -35,15 +35,18 @@ class ObligationRepository(BaseRepository[Obligation]):
 
     async def list_by_client(
         self,
-        client_id: UUID,
+        client_id: Optional[UUID] = None,
         status: Optional[ObligationStatus] = None,
         year: Optional[int] = None,
         month: Optional[int] = None,
         skip: int = 0,
         limit: int = 100,
     ) -> tuple[Sequence[Obligation], int]:
-        """List obligations for a specific client with filters."""
-        conditions = [Obligation.client_id == client_id]
+        """List obligations with filters. If client_id is None, lists all obligations."""
+        conditions = []
+
+        if client_id:
+            conditions.append(Obligation.client_id == client_id)
 
         if status:
             conditions.append(Obligation.status == status)
@@ -54,10 +57,15 @@ class ObligationRepository(BaseRepository[Obligation]):
         if month:
             conditions.append(func.extract("month", Obligation.due_date) == month)
 
-        stmt = select(Obligation).where(and_(*conditions)).options(selectinload(Obligation.obligation_type))
+        where_clause = and_(*conditions) if conditions else True
+
+        stmt = select(Obligation).where(where_clause).options(
+            selectinload(Obligation.obligation_type),
+            selectinload(Obligation.client),
+        )
 
         # Count total
-        count_stmt = select(func.count()).select_from(Obligation).where(and_(*conditions))
+        count_stmt = select(func.count()).select_from(Obligation).where(where_clause)
         total_result = await self.db.execute(count_stmt)
         total = total_result.scalar_one()
 

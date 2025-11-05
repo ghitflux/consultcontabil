@@ -175,8 +175,25 @@ export default function LicencasPage() {
 
   const handleCreateSubmit = async () => {
     try {
+      // Validate client_id
+      if (!formData.client_id || formData.client_id === "") {
+        console.error("Client ID is required");
+        alert("Por favor, selecione um cliente antes de criar a licença.");
+        return;
+      }
+
       await createLicense(formData);
       onCreateClose();
+      // Reset form
+      setFormData({
+        client_id: selectedClientId || "",
+        license_type: LicenseType.ALVARA_FUNCIONAMENTO,
+        registration_number: "",
+        issuing_authority: "",
+        issue_date: new Date().toISOString().split("T")[0],
+        expiration_date: null,
+        notes: null,
+      });
       // Refresh list
       fetchLicenses({
         ...filters,
@@ -184,6 +201,7 @@ export default function LicencasPage() {
       });
     } catch (error) {
       console.error("Error creating license:", error);
+      alert(error instanceof Error ? error.message : "Erro ao criar licença. Verifique os dados e tente novamente.");
     }
   };
 
@@ -454,7 +472,9 @@ export default function LicencasPage() {
               color="primary"
               onPress={handleCreateSubmit}
               isDisabled={
-                !formData.registration_number || !formData.issuing_authority
+                !formData.client_id ||
+                !formData.registration_number ||
+                !formData.issuing_authority
               }
             >
               Criar

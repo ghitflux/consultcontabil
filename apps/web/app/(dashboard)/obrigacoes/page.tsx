@@ -1,33 +1,58 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Card,
-  CardHeader,
   CardBody,
-  Divider,
+  Button,
+  Tabs,
+  Tab,
+  Select,
+  SelectItem,
   Modal,
   ModalContent,
   ModalHeader,
   ModalBody,
   ModalFooter,
-  Button,
   Input,
   Textarea,
-  Select,
-  SelectItem,
   useDisclosure,
 } from "@/heroui";
-import { ObligationsTable } from "@/components/features/obrigacoes/ObligationsTable";
-import { ObligationFilters } from "@/components/features/obrigacoes/ObligationFilters";
+import { ObligationsMatrixTable } from "@/components/features/obrigacoes/ObligationsMatrixTable";
 import { ObligationTimeline } from "@/components/features/obrigacoes/ObligationTimeline";
 import { useObligations, Obligation } from "@/hooks/useObligations";
 import { useClients } from "@/hooks/useClients";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { CalendarIcon } from "@/lib/icons";
+
+const MONTHS = [
+  { value: 1, label: "Janeiro" },
+  { value: 2, label: "Fevereiro" },
+  { value: 3, label: "Março" },
+  { value: 4, label: "Abril" },
+  { value: 5, label: "Maio" },
+  { value: 6, label: "Junho" },
+  { value: 7, label: "Julho" },
+  { value: 8, label: "Agosto" },
+  { value: 9, label: "Setembro" },
+  { value: 10, label: "Outubro" },
+  { value: 11, label: "Novembro" },
+  { value: 12, label: "Dezembro" },
+];
+
+const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 export default function ObrigacoesPage() {
+  const [activeTab, setActiveTab] = useState<"office" | "client">("office");
   const [selectedClientId, setSelectedClientId] = useState<string>("");
-  const [selectedObligation, setSelectedObligation] =
-    useState<Obligation | null>(null);
+  const [selectedObligation, setSelectedObligation] = useState<Obligation | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [letterFilter, setLetterFilter] = useState("");
+
+  // Competência (mês/ano)
+  const currentDate = new Date();
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
 
   const [filters, setFilters] = useState<{
     status?: string;
@@ -61,10 +86,13 @@ export default function ObrigacoesPage() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadNotes, setUploadNotes] = useState("");
   const [cancelReason, setCancelReason] = useState("");
-  const [generateYear, setGenerateYear] = useState(new Date().getFullYear());
-  const [generateMonth, setGenerateMonth] = useState(new Date().getMonth() + 1);
+  const [generateYear, setGenerateYear] = useState(currentDate.getFullYear());
+  const [generateMonth, setGenerateMonth] = useState(currentDate.getMonth() + 1);
 
   const { clients, isLoading: clientsLoading, fetchClients: fetchClientsData } = useClients();
+
+  // Determinar qual clientId usar baseado na tab
+  const effectiveClientId = activeTab === "client" ? selectedClientId : "";
 
   const {
     obligations,
@@ -72,20 +100,66 @@ export default function ObrigacoesPage() {
     uploadReceipt,
     cancelObligation,
     generateObligations,
+    fetchObligations,
   } = useObligations({
-    clientId: selectedClientId,
+    clientId: effectiveClientId || undefined,
+    year: selectedYear,
+    month: selectedMonth,
     ...filters,
-    autoFetch: !!selectedClientId,
+    autoFetch: true,
   });
 
   // Fetch clients on mount
   useEffect(() => {
-    fetchClientsData({ size: 100 });
+    fetchClientsData({ size: 1000 });
   }, [fetchClientsData]);
+
+  // Atualizar filtros quando competência muda
+  useEffect(() => {
+    setFilters({
+      year: selectedYear,
+      month: selectedMonth,
+    });
+  }, [selectedYear, selectedMonth]);
+
+  // Filtrar obrigações por busca e letra
+  const filteredObligations = useMemo(() => {
+    let filtered = obligations;
+
+    // Filtrar por busca
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (ob) =>
+          ob.client_name.toLowerCase().includes(query) ||
+          ob.client_cnpj.replace(/\D/g, "").includes(query)
+      );
+    }
+
+    // Filtrar por letra
+    if (letterFilter) {
+      filtered = filtered.filter((ob) =>
+        ob.client_name.toUpperCase().startsWith(letterFilter)
+      );
+    }
+
+    return filtered;
+  }, [obligations, searchQuery, letterFilter]);
 
   const handleViewDetails = (obligation: Obligation) => {
     setSelectedObligation(obligation);
     onDetailsOpen();
+  };
+
+  const handleDownload = async (obligation: Obligation) => {
+    // Simular baixa - você pode chamar uploadReceipt ou uma função específica
+    setSelectedObligation(obligation);
+    onUploadOpen();
+  };
+
+  const handleRefresh = (obligation: Obligation) => {
+    // Recarregar obrigações
+    fetchObligations();
   };
 
   const handleUploadReceipt = (obligation: Obligation) => {
@@ -107,6 +181,7 @@ export default function ObrigacoesPage() {
     try {
       await uploadReceipt(selectedObligation.id, uploadFile, uploadNotes);
       onUploadClose();
+      fetchObligations();
     } catch (error) {
       console.error("Error uploading receipt:", error);
     }
@@ -118,6 +193,7 @@ export default function ObrigacoesPage() {
     try {
       await cancelObligation(selectedObligation.id, cancelReason);
       onCancelClose();
+      fetchObligations();
     } catch (error) {
       console.error("Error cancelling obligation:", error);
     }
@@ -128,12 +204,18 @@ export default function ObrigacoesPage() {
       await generateObligations(
         generateYear,
         generateMonth,
-        selectedClientId || undefined
+        activeTab === "client" ? selectedClientId || undefined : undefined
       );
       onGenerateClose();
+      fetchObligations();
     } catch (error) {
       console.error("Error generating obligations:", error);
     }
+  };
+
+  const formatCompetencia = () => {
+    const month = MONTHS.find((m) => m.value === selectedMonth);
+    return `${month?.label.toLowerCase() || ""} de ${selectedYear}`;
   };
 
   return (
@@ -146,54 +228,134 @@ export default function ObrigacoesPage() {
         </p>
       </div>
 
-      {/* Client Selector */}
+      {/* Tabs e Filtros */}
       <Card>
-        <CardBody>
-          <Select
-            label="Selecione um Cliente"
-            placeholder="Escolha um cliente"
-            value={selectedClientId}
-            onChange={(e) => setSelectedClientId(e.target.value)}
-            isLoading={clientsLoading}
+        <CardBody className="space-y-4">
+          <Tabs
+            selectedKey={activeTab}
+            onSelectionChange={(key) => {
+              setActiveTab(key as "office" | "client");
+              setSelectedClientId("");
+            }}
           >
-            {(clients?.items || []).map((client) => (
-              <SelectItem key={client.id}>
-                {client.razao_social} - {client.cnpj}
-              </SelectItem>
+            <Tab key="office" title="Obrigações do Escritório" />
+            <Tab key="client" title="Cliente Específico" />
+          </Tabs>
+
+          {activeTab === "client" && (
+            <Select
+              label="Selecione um Cliente"
+              placeholder="Escolha um cliente"
+              selectedKeys={selectedClientId ? [selectedClientId] : []}
+              onSelectionChange={(keys) => {
+                const value = Array.from(keys)[0] as string;
+                setSelectedClientId(value || "");
+              }}
+              isLoading={clientsLoading}
+              variant="bordered"
+            >
+              {(clients?.items || []).map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.razao_social} - {client.cnpj}
+                </SelectItem>
+              ))}
+            </Select>
+          )}
+
+          <div className="flex flex-col gap-4 md:flex-row md:items-end">
+            {/* Competência */}
+            <div className="flex gap-2 items-end">
+              <Select
+                label="Competência"
+                placeholder="Mês"
+                selectedKeys={selectedMonth.toString()}
+                onSelectionChange={(keys) => {
+                  const value = Array.from(keys)[0] as string;
+                  setSelectedMonth(parseInt(value) || currentDate.getMonth() + 1);
+                }}
+                variant="bordered"
+                className="w-48"
+                startContent={<CalendarIcon className="h-5 w-5 text-default-400" />}
+              >
+                {MONTHS.map((month) => (
+                  <SelectItem key={month.value.toString()} value={month.value.toString()}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </Select>
+              <Select
+                placeholder="Ano"
+                selectedKeys={selectedYear.toString()}
+                onSelectionChange={(keys) => {
+                  const value = Array.from(keys)[0] as string;
+                  setSelectedYear(parseInt(value) || currentDate.getFullYear());
+                }}
+                variant="bordered"
+                className="w-32"
+              >
+                {Array.from({ length: 5 }, (_, i) => {
+                  const year = currentDate.getFullYear() - 2 + i;
+                  return (
+                    <SelectItem key={year.toString()} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  );
+                })}
+              </Select>
+            </div>
+
+            {/* Busca */}
+            <div className="flex-1">
+              <SearchInput
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+                placeholder="Buscar empresa..."
+              />
+            </div>
+
+            {/* Gerar Obrigações */}
+            <Button color="success" variant="flat" onPress={onGenerateOpen}>
+              Gerar Obrigações
+            </Button>
+          </div>
+
+          {/* Filtro rápido por letra */}
+          <div className="flex flex-wrap gap-1">
+            <Button
+              size="sm"
+              variant={letterFilter === "" ? "solid" : "flat"}
+              className="min-w-8"
+              onPress={() => setLetterFilter("")}
+            >
+              Todas
+            </Button>
+            {ALPHABET.map((letter) => (
+              <Button
+                key={letter}
+                size="sm"
+                variant={letterFilter === letter ? "solid" : "flat"}
+                className="min-w-8"
+                onPress={() => setLetterFilter(letter)}
+              >
+                {letter}
+              </Button>
             ))}
-          </Select>
+          </div>
         </CardBody>
       </Card>
 
-      {selectedClientId && (
-        <>
-          {/* Filters */}
-          <Card>
-            <CardBody>
-              <ObligationFilters
-                onFilterChange={setFilters}
-                onGenerateClick={onGenerateOpen}
-              />
-            </CardBody>
-          </Card>
-
-          {/* Obligations Table */}
-          <Card>
-            <CardHeader>
-              <h2 className="text-xl font-semibold">Lista de Obrigações</h2>
-            </CardHeader>
-            <Divider />
-            <CardBody>
-              <ObligationsTable
-                obligations={obligations}
-                loading={obligationsLoading}
-                onViewDetails={handleViewDetails}
-                onUploadReceipt={handleUploadReceipt}
-                onCancel={handleCancelObligation}
-              />
-            </CardBody>
-          </Card>
-        </>
+      {/* Tabela de Obrigações */}
+      {(activeTab === "office" || (activeTab === "client" && selectedClientId)) && (
+        <Card>
+          <CardBody className="p-0">
+            <ObligationsMatrixTable
+              obligations={filteredObligations}
+              loading={obligationsLoading}
+              onDownload={handleDownload}
+              onRefresh={handleRefresh}
+            />
+          </CardBody>
+        </Card>
       )}
 
       {/* Details Modal */}
@@ -242,9 +404,9 @@ export default function ObrigacoesPage() {
                   </div>
                 </div>
 
-                <Divider />
-
-                <ObligationTimeline obligationId={selectedObligation.id} />
+                <div className="border-t border-divider pt-4">
+                  <ObligationTimeline obligationId={selectedObligation.id} />
+                </div>
               </div>
             )}
           </ModalBody>
@@ -335,19 +497,20 @@ export default function ObrigacoesPage() {
               />
               <Select
                 label="Mês"
-                value={generateMonth.toString()}
-                onChange={(e) => setGenerateMonth(parseInt(e.target.value))}
+                selectedKeys={generateMonth.toString()}
+                onSelectionChange={(keys) => {
+                  const value = Array.from(keys)[0] as string;
+                  setGenerateMonth(parseInt(value) || currentDate.getMonth() + 1);
+                }}
               >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
-                  <SelectItem key={month.toString()}>
-                    {new Date(2000, month - 1).toLocaleDateString("pt-BR", {
-                      month: "long",
-                    })}
+                {MONTHS.map((month) => (
+                  <SelectItem key={month.value.toString()}>
+                    {month.label}
                   </SelectItem>
                 ))}
               </Select>
               <p className="text-sm text-default-500">
-                {selectedClientId
+                {activeTab === "client" && selectedClientId
                   ? "Serão geradas obrigações apenas para o cliente selecionado."
                   : "Serão geradas obrigações para todos os clientes ativos."}
               </p>
