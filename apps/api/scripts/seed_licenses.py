@@ -83,7 +83,7 @@ async def seed_licenses():
                 if expiration_date and expiration_date < date.today():
                     status = LicenseStatus.VENCIDA
                 elif expiration_date and expiration_date < date.today() + timedelta(days=30):
-                    status = LicenseStatus.VENCENDO
+                    status = LicenseStatus.PENDENTE_RENOVACAO
                 else:
                     status = LicenseStatus.ATIVA
 
