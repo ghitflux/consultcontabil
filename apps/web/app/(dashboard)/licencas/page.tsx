@@ -78,13 +78,13 @@ export default function LicencasPage() {
     license_type: LicenseType.ALVARA_FUNCIONAMENTO,
     registration_number: "",
     issuing_authority: "",
-    issue_date: new Date().toISOString().split("T")[0],
+    issue_date: new Date().toISOString().split("T")[0]!,
     expiration_date: null,
     notes: null,
   });
 
   const [renewalData, setRenewalData] = useState<LicenseRenewal>({
-    new_issue_date: new Date().toISOString().split("T")[0],
+    new_issue_date: new Date().toISOString().split("T")[0]!,
     new_expiration_date: null,
     new_registration_number: null,
     notes: null,
@@ -136,7 +136,7 @@ export default function LicencasPage() {
       license_type: LicenseType.ALVARA_FUNCIONAMENTO,
       registration_number: "",
       issuing_authority: "",
-      issue_date: new Date().toISOString().split("T")[0],
+      issue_date: new Date().toISOString().split("T")[0]!,
       expiration_date: null,
       notes: null,
     });
@@ -160,7 +160,7 @@ export default function LicencasPage() {
   const handleRenew = (license: License) => {
     setSelectedLicense(license);
     setRenewalData({
-      new_issue_date: new Date().toISOString().split("T")[0],
+      new_issue_date: new Date().toISOString().split("T")[0]!,
       new_expiration_date: null,
       new_registration_number: null,
       notes: null,
@@ -190,7 +190,7 @@ export default function LicencasPage() {
         license_type: LicenseType.ALVARA_FUNCIONAMENTO,
         registration_number: "",
         issuing_authority: "",
-        issue_date: new Date().toISOString().split("T")[0],
+        issue_date: new Date().toISOString().split("T")[0]!,
         expiration_date: null,
         notes: null,
       });

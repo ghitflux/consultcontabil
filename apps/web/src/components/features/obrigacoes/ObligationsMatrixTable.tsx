@@ -79,7 +79,7 @@ export function ObligationsMatrixTable({
   const getProgress = (companyObligations: Obligation[]) => {
     const total = OBLIGATION_TYPES.length;
     const completed = companyObligations.filter(
-      (ob) => ob.status === "completed" || ob.status === "concluida"
+      (ob) => ob.status === "completed"
     ).length;
     return { completed, total };
   };
@@ -87,16 +87,11 @@ export function ObligationsMatrixTable({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
-      case "concluida":
         return "success";
       case "pending":
-      case "pendente":
         return "warning";
       case "cancelled":
-      case "cancelada":
         return "default";
-      case "atrasada":
-        return "danger";
       default:
         return "default";
     }
@@ -134,28 +129,31 @@ export function ObligationsMatrixTable({
         }}
       >
         <TableHeader>
-          <TableColumn>EMPRESA / CNPJ</TableColumn>
-          {OBLIGATION_TYPES.map((type) => (
-            <TableColumn key={type.code}>{type.name}</TableColumn>
-          ))}
-          <TableColumn>PROGRESSO</TableColumn>
+          {[
+            <TableColumn key="company">EMPRESA / CNPJ</TableColumn>,
+            ...OBLIGATION_TYPES.map((type) => (
+              <TableColumn key={type.code}>{type.name}</TableColumn>
+            )),
+            <TableColumn key="progress">PROGRESSO</TableColumn>
+          ]}
         </TableHeader>
         <TableBody>
           {companies.map((company) => {
             const progress = getProgress(company.obligations);
             return (
               <TableRow key={company.client_id}>
-                <TableCell>
-                  <div>
-                    <p className="font-semibold text-default-900">
-                      {company.client_name}
-                    </p>
-                    <p className="text-sm text-default-500">
-                      {formatCNPJ(company.client_cnpj)}
-                    </p>
-                  </div>
-                </TableCell>
-                {OBLIGATION_TYPES.map((type) => {
+                {[
+                  <TableCell key="company">
+                    <div>
+                      <p className="font-semibold text-default-900">
+                        {company.client_name}
+                      </p>
+                      <p className="text-sm text-default-500">
+                        {formatCNPJ(company.client_cnpj)}
+                      </p>
+                    </div>
+                  </TableCell>,
+                  ...OBLIGATION_TYPES.map((type) => {
                   const obligation = getObligationByType(
                     company.obligations,
                     type.code
@@ -169,11 +167,9 @@ export function ObligationsMatrixTable({
                   }
 
                   const isCompleted =
-                    obligation.status === "completed" ||
-                    obligation.status === "concluida";
+                    obligation.status === "completed";
                   const isPending =
-                    obligation.status === "pending" ||
-                    obligation.status === "pendente";
+                    obligation.status === "pending";
 
                   return (
                     <TableCell key={type.code}>
@@ -218,21 +214,22 @@ export function ObligationsMatrixTable({
                       )}
                     </TableCell>
                   );
-                })}
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Progress
-                      value={(progress.completed / progress.total) * 100}
-                      className="flex-1"
-                      color="primary"
-                      size="sm"
-                      showValueLabel={false}
-                    />
-                    <span className="text-sm text-default-600 min-w-[3rem] text-right">
-                      {progress.completed}/{progress.total}
-                    </span>
-                  </div>
-                </TableCell>
+                  }),
+                  <TableCell key="progress">
+                    <div className="flex items-center gap-2">
+                      <Progress
+                        value={(progress.completed / progress.total) * 100}
+                        className="flex-1"
+                        color="primary"
+                        size="sm"
+                        showValueLabel={false}
+                      />
+                      <span className="text-sm text-default-600 min-w-[3rem] text-right">
+                        {progress.completed}/{progress.total}
+                      </span>
+                    </div>
+                  </TableCell>
+                ]}
               </TableRow>
             );
           })}

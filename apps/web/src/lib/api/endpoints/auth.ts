@@ -9,6 +9,8 @@ import type {
   RefreshRequest,
   RefreshResponse,
   LogoutRequest,
+  PasswordResetRequest,
+  PasswordResetConfirm,
 } from "@/types/auth";
 import type { User } from "@/types/user";
 
@@ -43,6 +45,13 @@ export const authApi = {
   },
 
   /**
+   * Get current user information
+   */
+  async me(): Promise<User> {
+    return apiClient.get<User>("/users/me");
+  },
+
+  /**
    * Refresh access token
    */
   async refresh(refreshToken: string): Promise<RefreshResponse> {
@@ -64,10 +73,16 @@ export const authApi = {
   },
 
   /**
-   * Get current user information
+   * Request password reset
    */
-  async me(): Promise<User> {
-    return apiClient.get<User>("/users/me");
+  async requestPasswordReset(request: PasswordResetRequest): Promise<void> {
+    await apiClient.post("/auth/password-reset", request);
+  },
+
+  /**
+   * Confirm password reset with token
+   */
+  async confirmPasswordReset(request: PasswordResetConfirm): Promise<void> {
+    await apiClient.post("/auth/password-reset/confirm", request);
   },
 };
-

@@ -255,7 +255,7 @@ export default function ObrigacoesPage() {
               variant="bordered"
             >
               {(clients?.items || []).map((client) => (
-                <SelectItem key={client.id} value={client.id}>
+                <SelectItem key={client.id}>
                   {client.razao_social} - {client.cnpj}
                 </SelectItem>
               ))}
@@ -278,7 +278,7 @@ export default function ObrigacoesPage() {
                 startContent={<CalendarIcon className="h-5 w-5 text-default-400" />}
               >
                 {MONTHS.map((month) => (
-                  <SelectItem key={month.value.toString()} value={month.value.toString()}>
+                  <SelectItem key={month.value.toString()}>
                     {month.label}
                   </SelectItem>
                 ))}
@@ -296,7 +296,7 @@ export default function ObrigacoesPage() {
                 {Array.from({ length: 5 }, (_, i) => {
                   const year = currentDate.getFullYear() - 2 + i;
                   return (
-                    <SelectItem key={year.toString()} value={year.toString()}>
+                    <SelectItem key={year.toString()}>
                       {year}
                     </SelectItem>
                   );

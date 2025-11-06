@@ -60,7 +60,7 @@ export function ClientsTable({ clients, isLoading = false }: ClientsTableProps) 
             {new Intl.NumberFormat('pt-BR', {
               style: 'currency',
               currency: 'BRL',
-            }).format(client.honorarios)}
+            }).format(client.honorarios_mensais)}
           </span>
         ),
       },

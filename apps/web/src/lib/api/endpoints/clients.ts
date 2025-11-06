@@ -19,11 +19,11 @@ export const clientsApi = {
     const params = new URLSearchParams();
 
     if (filters?.query) params.append("query", filters.query);
-    if (filters?.status && filters.status !== "") params.append("status", filters.status);
-    if (filters?.regime_tributario && filters.regime_tributario !== "") {
+    if (filters?.status && filters.status !== "" as any) params.append("status", filters.status);
+    if (filters?.regime_tributario && filters.regime_tributario !== "" as any) {
       params.append("regime_tributario", filters.regime_tributario);
     }
-    if (filters?.tipo_empresa && filters.tipo_empresa !== "") {
+    if (filters?.tipo_empresa && filters.tipo_empresa !== "" as any) {
       params.append("tipo_empresa", filters.tipo_empresa);
     }
     if (filters?.starts_with) params.append("starts_with", filters.starts_with);
