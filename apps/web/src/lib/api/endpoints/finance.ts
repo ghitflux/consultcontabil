@@ -5,7 +5,7 @@
  * This file is a placeholder for future implementation.
  */
 
-import { apiClient } from "../client";
+// import { apiClient } from "../client";
 
 export const financeApi = {
   /**

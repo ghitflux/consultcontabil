@@ -146,10 +146,11 @@ export default function ObrigacoesPage() {
     return filtered;
   }, [obligations, searchQuery, letterFilter]);
 
-  const handleViewDetails = (obligation: Obligation) => {
-    setSelectedObligation(obligation);
-    onDetailsOpen();
-  };
+  // TODO: Implement details view
+  // const handleViewDetails = (obligation: Obligation) => {
+  //   setSelectedObligation(obligation);
+  //   onDetailsOpen();
+  // };
 
   const handleDownload = async (obligation: Obligation) => {
     // Simular baixa - você pode chamar uploadReceipt ou uma função específica
@@ -157,23 +158,24 @@ export default function ObrigacoesPage() {
     onUploadOpen();
   };
 
-  const handleRefresh = (obligation: Obligation) => {
+  const handleRefresh = (_obligation: Obligation) => {
     // Recarregar obrigações
     fetchObligations();
   };
 
-  const handleUploadReceipt = (obligation: Obligation) => {
-    setSelectedObligation(obligation);
-    setUploadFile(null);
-    setUploadNotes("");
-    onUploadOpen();
-  };
+  // TODO: Implement these handlers if needed
+  // const handleUploadReceipt = (obligation: Obligation) => {
+  //   setSelectedObligation(obligation);
+  //   setUploadFile(null);
+  //   setUploadNotes("");
+  //   onUploadOpen();
+  // };
 
-  const handleCancelObligation = (obligation: Obligation) => {
-    setSelectedObligation(obligation);
-    setCancelReason("");
-    onCancelOpen();
-  };
+  // const handleCancelObligation = (obligation: Obligation) => {
+  //   setSelectedObligation(obligation);
+  //   setCancelReason("");
+  //   onCancelOpen();
+  // };
 
   const handleUploadSubmit = async () => {
     if (!selectedObligation || !uploadFile) return;
@@ -213,10 +215,7 @@ export default function ObrigacoesPage() {
     }
   };
 
-  const formatCompetencia = () => {
-    const month = MONTHS.find((m) => m.value === selectedMonth);
-    return `${month?.label.toLowerCase() || ""} de ${selectedYear}`;
-  };
+  // Removed unused function formatCompetencia
 
   return (
     <div className="space-y-6">

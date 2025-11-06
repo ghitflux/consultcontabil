@@ -14,7 +14,7 @@ import {
   TableCell,
 } from "@/heroui";
 import type { ReportPreviewResponse } from "@/types/report";
-import { formatCurrency, formatDate, formatPercentage } from "@/lib/masks";
+import { formatCurrency, formatDate } from "@/lib/masks";
 
 interface ReportPreviewRendererProps {
   preview: ReportPreviewResponse | null;

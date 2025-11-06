@@ -6,7 +6,7 @@ import { licensesApi } from "@/lib/api/endpoints/licenses";
 import type { License, LicenseCreate, LicenseFilters, LicenseListResponse, LicenseRenewal, LicenseUpdate, LicenseEvent } from "@/types/license";
 import { useCallback, useState } from "react";
 
-export function useLicenses(filters?: LicenseFilters & { autoFetch?: boolean }) {
+export function useLicenses(_filters?: LicenseFilters & { autoFetch?: boolean }) {
   const [licenses, setLicenses] = useState<LicenseListResponse | null>(null);
   const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
   const [events, setEvents] = useState<LicenseEvent[]>([]);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardBody, Divider, Spinner } from "@/heroui";
+import { Card, CardBody, Spinner } from "@/heroui";
 import type { LicenseEvent } from "@/types/license";
 import { licensesApi } from "@/lib/api/endpoints/licenses";
 import { LICENSE_EVENT_TYPE_LABELS, LicenseEventType } from "@/types/license";

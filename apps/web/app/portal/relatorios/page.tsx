@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useReports } from "@/hooks/useReports";
 import { useReportPreview } from "@/hooks/useReportPreview";
 import { useReportExport } from "@/hooks/useReportExport";
-import type { ReportTypeInfo } from "@/types/report";
+// import type { ReportTypeInfo } from "@/types/report";
 import {
   ReportType as ReportTypeEnum,
   ReportFormat,

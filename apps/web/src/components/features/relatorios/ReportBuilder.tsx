@@ -42,8 +42,6 @@ import {
   SaveIcon,
   RefreshIcon,
   TrashIcon,
-  DollarSignIcon,
-  BarChartIcon,
 } from "@/lib/icons";
 
 interface InitialSelection {
