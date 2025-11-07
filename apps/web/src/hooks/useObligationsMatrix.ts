@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { api } from '@/lib/api';
+import { obligationsApi } from '@/lib/api/endpoints/obligations';
 
 export interface ObligationData {
   id: string;
@@ -29,17 +29,8 @@ export function useObligationsMatrix() {
       setIsLoading(true);
       setError(null);
 
-      const params = new URLSearchParams({
-        month: month.toString(),
-        year: year.toString(),
-      });
-
-      if (search) {
-        params.append('search', search);
-      }
-
-      const response = await api.get<ClientMatrixRow[]>(`/obligations/matrix?${params}`);
-      setMatrix(response.data);
+      const data = await obligationsApi.getMatrix(month, year, search);
+      setMatrix(data);
     } catch (err) {
       console.error('Error fetching matrix:', err);
       setError('Erro ao carregar matriz de obrigações');
@@ -50,7 +41,7 @@ export function useObligationsMatrix() {
 
   const completeObligation = useCallback(async (obligationId: string) => {
     try {
-      await api.post(`/obligations/${obligationId}/complete`);
+      await obligationsApi.complete(obligationId);
 
       // Update matrix locally
       setMatrix((prev) =>
@@ -76,7 +67,7 @@ export function useObligationsMatrix() {
 
   const undoObligation = useCallback(async (obligationId: string) => {
     try {
-      await api.post(`/obligations/${obligationId}/undo`);
+      await obligationsApi.undo(obligationId);
 
       // Update matrix locally
       setMatrix((prev) =>
