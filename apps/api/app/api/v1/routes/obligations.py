@@ -571,6 +571,7 @@ async def get_obligations_matrix(
                     "status": ob.status.value,
                     "receipt_url": ob.receipt_url,
                     "due_date": ob.due_date.isoformat() if ob.due_date else None,
+                    "obligation_type_name": ob.obligation_type.name,
                 }
 
         # Build obligations array for fixed types

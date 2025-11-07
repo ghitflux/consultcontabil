@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import get_settings
-from app.db.models.client import Client, ClientStatus, RegimeTributario, TipoEmpresa, ServicoType
+from app.db.models.client import Client, ClientStatus, RegimeTributario, TipoEmpresa
 
 settings = get_settings()
 
@@ -54,7 +54,7 @@ async def seed_clients():
                 "uf": "SP",
                 "honorarios_mensais": 1500.00,
                 "dia_vencimento": 10,
-                "servicos": [ServicoType.FISCAL, ServicoType.CONTABIL, ServicoType.PESSOAL],
+                "servicos": ["fiscal", "contabil", "pessoal"],
                 "valor_fiscal": 800.00,
                 "valor_contabil": 500.00,
                 "valor_pessoal": 200.00,
@@ -78,7 +78,7 @@ async def seed_clients():
                 "uf": "RJ",
                 "honorarios_mensais": 2000.00,
                 "dia_vencimento": 15,
-                "servicos": [ServicoType.FISCAL, ServicoType.CONTABIL],
+                "servicos": ["fiscal", "contabil"],
                 "valor_fiscal": 1200.00,
                 "valor_contabil": 800.00,
                 "valor_pessoal": 0.00,
@@ -102,7 +102,7 @@ async def seed_clients():
                 "uf": "SC",
                 "honorarios_mensais": 3000.00,
                 "dia_vencimento": 5,
-                "servicos": [ServicoType.FISCAL, ServicoType.CONTABIL, ServicoType.PESSOAL],
+                "servicos": ["fiscal", "contabil", "pessoal"],
                 "valor_fiscal": 1500.00,
                 "valor_contabil": 1000.00,
                 "valor_pessoal": 500.00,
@@ -123,7 +123,7 @@ async def seed_clients():
                 "telefone": f"(11) {3000+i}-{7000+i}",
                 "honorarios_mensais": 1000.00 + (i * 100),
                 "dia_vencimento": (i % 28) + 1,
-                "servicos": [ServicoType.FISCAL, ServicoType.CONTABIL],
+                "servicos": ["fiscal", "contabil"],
                 "valor_fiscal": 500.00 + (i * 50),
                 "valor_contabil": 300.00 + (i * 30),
                 "valor_pessoal": 200.00 + (i * 20),

@@ -65,7 +65,9 @@
       "Bash(../../venv/Scripts/python.exe -m scripts.seed_clients:*)",
       "Bash(git pull:*)",
       "Bash(timeout 120 pnpm build:*)",
-      "Bash(timeout 5 venv/Scripts/python.exe -c:*)"
+      "Bash(timeout 5 venv/Scripts/python.exe -c:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []
