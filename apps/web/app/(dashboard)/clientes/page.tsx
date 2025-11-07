@@ -1,21 +1,46 @@
 'use client';
 
-import { Button, Card, CardBody, CardHeader, Chip, Divider, Modal, ModalBody, ModalContent, ModalHeader, Pagination, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, useDisclosure } from '@/heroui';
+import { Button, Card, CardBody, CardHeader, Chip, Divider, Pagination, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, useDisclosure } from '@/heroui';
 import { useClients } from '@/hooks/useClients';
-import type { ClientListItem, ClientStatus } from '@/types/client';
-import { formatCNPJ, getRegimeLabel, getStatusLabel, getTipoEmpresaLabel } from '@/types/client';
+import type { ClientListItem, ClientStatus, ClientCreate, RegimeTributario } from '@/types/client';
+import { formatCNPJ, getRegimeLabel, getStatusLabel } from '@/types/client';
 import { useEffect, useState } from 'react';
 import { SearchInput } from '@/components/ui/SearchInput';
+import { PlusIcon } from '@/lib/icons';
+import { ClientFormModal } from '@/components/features/clientes/ClientFormModal';
+import { ClientDetailsModal } from '@/components/features/clientes/ClientDetailsModal';
+import { ClientKPIs } from '@/components/features/clientes/ClientKPIs';
+import { ColumnFilter } from '@/components/features/clientes/ColumnFilter';
+import { Can } from '@/components/shared/Can';
+import { UserRole } from '@/types/user';
 
 export default function ClientesPage() {
-  const { clients, selectedClient, isLoading, fetchClients, fetchClientById, setSelectedClient } = useClients();
+  const { clients, selectedClient, isLoading, fetchClients, fetchClientById, createClient, setSelectedClient } = useClients();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [letterFilter, setLetterFilter] = useState('');
   const [page, setPage] = useState(1);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  // Column filters
+  const [cnpjFilter, setCnpjFilter] = useState('');
+  const [regimeFilter, setRegimeFilter] = useState<RegimeTributario | undefined>();
+  const [honorariosRange, setHonorariosRange] = useState<[number, number] | undefined>();
+
+  // Separate modals for create/edit and view
+  const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
+  const { isOpen: isDetailsOpen, onOpen: onDetailsOpen, onClose: onDetailsClose } = useDisclosure();
 
   const pageSize = 10;
+
+  // Mock stats (TODO: fetch from API)
+  const stats = clients ? {
+    total: clients.total,
+    ativos: clients.items.filter(c => c.status === 'ativo').length,
+    pendentes: clients.items.filter(c => c.status === 'pendente').length,
+    inativos: clients.items.filter(c => c.status === 'inativo').length,
+    receita_total: clients.items.reduce((sum, c) => sum + c.honorarios_mensais, 0),
+    ticket_medio: clients.total > 0 ? clients.items.reduce((sum, c) => sum + c.honorarios_mensais, 0) / clients.total : 0,
+  } : null;
 
   // Fetch clients on mount and when filters change
   useEffect(() => {
@@ -30,12 +55,25 @@ export default function ClientesPage() {
 
   const handleViewDetails = async (client: ClientListItem) => {
     await fetchClientById(client.id);
-    onOpen();
+    onDetailsOpen();
   };
 
-  const handleCloseModal = () => {
+  const handleSaveClient = async (data: ClientCreate) => {
+    await createClient(data);
+    onFormClose();
+    // Refresh list
+    fetchClients({
+      query: searchQuery || undefined,
+      status: (statusFilter as ClientStatus) || undefined,
+      starts_with: letterFilter || undefined,
+      page,
+      size: pageSize,
+    });
+  };
+
+  const handleCloseDetails = () => {
     setSelectedClient(null);
-    onClose();
+    onDetailsClose();
   };
 
   const statusColors: Record<ClientStatus, "success" | "warning" | "default"> = {
@@ -46,6 +84,29 @@ export default function ClientesPage() {
 
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
+  // Apply column filters client-side
+  const filteredClients = clients?.items.filter((client) => {
+    // CNPJ filter
+    if (cnpjFilter && !client.cnpj.toLowerCase().includes(cnpjFilter.toLowerCase())) {
+      return false;
+    }
+
+    // Regime filter
+    if (regimeFilter && client.regime_tributario !== regimeFilter) {
+      return false;
+    }
+
+    // Honorários range filter
+    if (honorariosRange) {
+      const [min, max] = honorariosRange;
+      if (client.honorarios_mensais < min || client.honorarios_mensais > max) {
+        return false;
+      }
+    }
+
+    return true;
+  }) || [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -53,11 +114,15 @@ export default function ClientesPage() {
           <h1 className="text-3xl font-bold">Clientes</h1>
           <p className="text-sm text-default-500">Gerenciar clientes do escritório</p>
         </div>
-        <Button color="primary">
-          <PlusIcon className="h-5 w-5" />
+        <Button color="primary" onPress={onFormOpen} startContent={<PlusIcon className="h-5 w-5" />}>
           Novo Cliente
         </Button>
       </div>
+
+      {/* KPIs - Only for Admin */}
+      <Can roles={[UserRole.ADMIN]}>
+        <ClientKPIs stats={stats} isLoading={isLoading} />
+      </Can>
 
       <Card>
         <CardHeader className="flex flex-col items-start gap-4 px-6 pt-6">
@@ -72,7 +137,7 @@ export default function ClientesPage() {
 
           {/* Search and Filters */}
           <div className="flex w-full flex-col gap-4">
-            <div className="flex flex-col gap-4 md:flex-row">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="w-full md:w-80">
                 <SearchInput
                   value={searchQuery}
@@ -103,6 +168,21 @@ export default function ClientesPage() {
                   onPress={() => setStatusFilter('pendente')}
                 >
                   Pendentes
+                </Button>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="danger"
+                  onPress={() => {
+                    setSearchQuery('');
+                    setCnpjFilter('');
+                    setRegimeFilter(undefined);
+                    setHonorariosRange(undefined);
+                    setStatusFilter('');
+                    setLetterFilter('');
+                  }}
+                >
+                  Limpar Filtros
                 </Button>
               </div>
             </div>
@@ -141,15 +221,62 @@ export default function ClientesPage() {
             <>
               <Table aria-label="Tabela de clientes" removeWrapper>
                 <TableHeader>
-                  <TableColumn>RAZÃO SOCIAL</TableColumn>
-                  <TableColumn>CNPJ</TableColumn>
-                  <TableColumn>REGIME</TableColumn>
-                  <TableColumn>HONORÁRIOS</TableColumn>
+                  <TableColumn>
+                    <div className="flex items-center gap-2">
+                      RAZÃO SOCIAL
+                      <ColumnFilter
+                        type="text"
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        placeholder="Filtrar razão social"
+                      />
+                    </div>
+                  </TableColumn>
+                  <TableColumn>
+                    <div className="flex items-center gap-2">
+                      CNPJ
+                      <ColumnFilter
+                        type="text"
+                        value={cnpjFilter}
+                        onChange={setCnpjFilter}
+                        placeholder="Filtrar CNPJ"
+                      />
+                    </div>
+                  </TableColumn>
+                  <TableColumn>
+                    <div className="flex items-center gap-2">
+                      REGIME
+                      <ColumnFilter
+                        type="select"
+                        value={regimeFilter}
+                        onChange={setRegimeFilter}
+                        options={[
+                          { label: 'Simples Nacional', value: 'simples_nacional' },
+                          { label: 'Lucro Presumido', value: 'lucro_presumido' },
+                          { label: 'Lucro Real', value: 'lucro_real' },
+                          { label: 'MEI', value: 'mei' },
+                        ]}
+                        placeholder="Filtrar regime"
+                      />
+                    </div>
+                  </TableColumn>
+                  <TableColumn>
+                    <div className="flex items-center gap-2">
+                      HONORÁRIOS
+                      <ColumnFilter
+                        type="range"
+                        value={honorariosRange}
+                        onChange={setHonorariosRange}
+                        min={0}
+                        max={10000}
+                      />
+                    </div>
+                  </TableColumn>
                   <TableColumn>STATUS</TableColumn>
                   <TableColumn>AÇÕES</TableColumn>
                 </TableHeader>
                 <TableBody emptyContent="Nenhum cliente encontrado">
-                  {(clients?.items || []).map((client) => (
+                  {filteredClients.map((client) => (
                     <TableRow key={client.id}>
                       <TableCell>
                         <div>
@@ -208,95 +335,19 @@ export default function ClientesPage() {
         </CardBody>
       </Card>
 
+      {/* Form Modal */}
+      <ClientFormModal
+        isOpen={isFormOpen}
+        onClose={onFormClose}
+        onSave={handleSaveClient}
+      />
+
       {/* Details Modal */}
-      <Modal isOpen={isOpen} onClose={handleCloseModal} size="2xl" scrollBehavior="inside">
-        <ModalContent>
-          <ModalHeader>Detalhes do Cliente</ModalHeader>
-          <ModalBody className="pb-6">
-            {selectedClient ? (
-              <div className="space-y-6">
-                {/* Company Info */}
-                <div>
-                  <h3 className="mb-3 font-semibold">Informações da Empresa</h3>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <DetailItem label="Razão Social" value={selectedClient.razao_social} />
-                    <DetailItem label="Nome Fantasia" value={selectedClient.nome_fantasia} />
-                    <DetailItem label="CNPJ" value={formatCNPJ(selectedClient.cnpj)} />
-                    <DetailItem label="Inscrição Estadual" value={selectedClient.inscricao_estadual} />
-                  </div>
-                </div>
-
-                {/* Contact */}
-                <div>
-                  <h3 className="mb-3 font-semibold">Contato</h3>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <DetailItem label="Email" value={selectedClient.email} />
-                    <DetailItem label="Telefone" value={selectedClient.telefone} />
-                  </div>
-                </div>
-
-                {/* Address */}
-                {selectedClient.logradouro && (
-                  <div>
-                    <h3 className="mb-3 font-semibold">Endereço</h3>
-                    <DetailItem
-                      label="Endereço Completo"
-                      value={`${selectedClient.logradouro}, ${selectedClient.numero}${
-                        selectedClient.complemento ? ` - ${selectedClient.complemento}` : ''
-                      }, ${selectedClient.bairro}, ${selectedClient.cidade}/${selectedClient.uf}`}
-                    />
-                  </div>
-                )}
-
-                {/* Financial */}
-                <div>
-                  <h3 className="mb-3 font-semibold">Informações Financeiras</h3>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <DetailItem
-                      label="Honorários Mensais"
-                      value={selectedClient.honorarios_mensais.toLocaleString('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                      })}
-                    />
-                    <DetailItem label="Dia de Vencimento" value={selectedClient.dia_vencimento.toString()} />
-                  </div>
-                </div>
-
-                {/* Tax Info */}
-                <div>
-                  <h3 className="mb-3 font-semibold">Informações Tributárias</h3>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <DetailItem label="Regime Tributário" value={getRegimeLabel(selectedClient.regime_tributario)} />
-                    <DetailItem label="Tipo de Empresa" value={getTipoEmpresaLabel(selectedClient.tipo_empresa)} />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex justify-center p-8">
-                <Spinner />
-              </div>
-            )}
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      <ClientDetailsModal
+        client={selectedClient}
+        isOpen={isDetailsOpen}
+        onClose={handleCloseDetails}
+      />
     </div>
-  );
-}
-
-function DetailItem({ label, value }: { label: string; value: string | null | undefined }) {
-  return (
-    <div>
-      <p className="text-xs text-default-500">{label}</p>
-      <p className="text-sm">{value || '-'}</p>
-    </div>
-  );
-}
-
-function PlusIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-    </svg>
   );
 }

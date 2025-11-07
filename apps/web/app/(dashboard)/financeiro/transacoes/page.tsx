@@ -17,7 +17,7 @@ export default function TransacoesPage() {
   const loadTransactions = async () => {
     try {
       setLoading(true);
-      const data = await financeApi.list({ size: 50 });
+      const data = await (financeApi as any).list({ size: 50 });
       setTransactions(data.items);
     } catch (error) {
       console.error("Error loading transactions:", error);

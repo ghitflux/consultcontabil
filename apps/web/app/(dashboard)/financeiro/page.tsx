@@ -2,13 +2,13 @@
 
 import { Card, CardBody, CardHeader, Spinner, Button } from "@/heroui";
 import { useEffect, useState } from "react";
-import { financeApi } from "@/lib/api/endpoints/finance";
+// import { financeApi } from "@/lib/api/endpoints/finance";
 import type { FinancialDashboardKPIs } from "@/types/finance";
 import { formatCurrency } from "@/types/finance";
 import Link from "next/link";
 
 export default function FinanceiroDashboard() {
-  const [kpis, setKpis] = useState<FinancialDashboardKPIs | null>(null);
+  const [kpis] = useState<FinancialDashboardKPIs | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,8 +18,9 @@ export default function FinanceiroDashboard() {
   const loadKPIs = async () => {
     try {
       setLoading(true);
-      const data = await financeApi.getDashboardKPIs();
-      setKpis(data);
+      // TODO: Implement getDashboardKPIs endpoint
+      // const data = await (financeApi as any).getDashboardKPIs();
+      // setKpis(data);
     } catch (error) {
       console.error("Error loading KPIs:", error);
     } finally {

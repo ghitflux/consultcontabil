@@ -8,7 +8,7 @@ from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import Boolean, Date, Float, Integer, Numeric, String, Text, func
-from sqlalchemy.dialects.postgresql import ENUM, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import ENUM, JSONB, UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.models.base import Base, TimestampMixin, UUIDMixin
@@ -79,13 +79,26 @@ class Client(Base, UUIDMixin, TimestampMixin):
         ENUM(TipoEmpresa, name="tipo_empresa", create_type=False),
         nullable=False,
     )
+    tipos_empresa: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True, server_default="[]")
+    codigo_simples: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     data_abertura: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    inicio_escritorio: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
     # Responsible person
     responsavel_nome: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     responsavel_cpf: Mapped[Optional[str]] = mapped_column(String(14), nullable=True)
     responsavel_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     responsavel_telefone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+    # System access credentials (encrypted) - using existing column names
+    senha_prefeitura: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    login_seg_desemp: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    senha_seg_desemp: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    senha_gcw_resp: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    # Services and licenses (JSONB arrays)
+    servicos_contratados: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True, server_default="[]")
+    licencas_necessarias: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True, server_default="[]")
 
     # Notes
     observacoes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -94,7 +107,7 @@ class Client(Base, UUIDMixin, TimestampMixin):
     status: Mapped[ClientStatus] = mapped_column(
         ENUM(ClientStatus, name="client_status", create_type=False),
         nullable=False,
-        server_default="pendente",
+        server_default="ATIVO",
     )
 
     # Soft delete

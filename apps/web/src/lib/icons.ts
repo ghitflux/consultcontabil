@@ -91,6 +91,10 @@ export {
   Lock as LockIcon,
   Unlock as UnlockIcon,
 
+  // Theme
+  Sun as SunIcon,
+  Moon as MoonIcon,
+
   // Interface
   Loader2 as LoaderIcon,
   RefreshCw as RefreshIcon,

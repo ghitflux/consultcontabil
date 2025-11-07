@@ -62,7 +62,10 @@
       "Bash(timeout 15 docker logs:*)",
       "Bash(timeout 20 docker logs:*)",
       "Bash(docker rm:*)",
-      "Bash(../../venv/Scripts/python.exe -m scripts.seed_clients:*)"
+      "Bash(../../venv/Scripts/python.exe -m scripts.seed_clients:*)",
+      "Bash(git pull:*)",
+      "Bash(timeout 120 pnpm build:*)",
+      "Bash(timeout 5 venv/Scripts/python.exe -c:*)"
     ],
     "deny": [],
     "ask": []

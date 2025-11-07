@@ -22,6 +22,20 @@ export enum TipoEmpresa {
   MISTO = "misto",
 }
 
+export enum ServicoContratado {
+  FISCAL = "fiscal",
+  CONTABIL = "contabil",
+  PESSOAL = "pessoal",
+}
+
+export enum LicencaNecessaria {
+  LICENCA_SANITARIA = "licenca_sanitaria",
+  ARCB_BOMBEIROS = "arcb_bombeiros",
+  LICENCA_OPERACOES = "licenca_operacoes",
+  BAIXO_RISCO = "baixo_risco",
+  CERT_ACESSIBILIDADE = "cert_acessibilidade",
+}
+
 export interface ClientBase {
   razao_social: string;
   nome_fantasia: string | null;
@@ -50,13 +64,26 @@ export interface ClientBase {
   // Tax info
   regime_tributario: RegimeTributario;
   tipo_empresa: TipoEmpresa;
+  tipos_empresa: string[];
+  codigo_simples: string | null;
   data_abertura: string | null;
+  inicio_escritorio: string | null;
 
   // Responsible person
   responsavel_nome: string | null;
   responsavel_cpf: string | null;
   responsavel_email: string | null;
   responsavel_telefone: string | null;
+
+  // System access credentials (will be encrypted on backend)
+  senha_prefeitura: string | null;
+  login_seg_desemp: string | null;
+  senha_seg_desemp: string | null;
+  senha_gcw_resp: string | null;
+
+  // Services and licenses
+  servicos_contratados: string[];
+  licencas_necessarias: string[];
 
   // Notes
   observacoes: string | null;
@@ -161,12 +188,98 @@ export function getRegimeLabel(regime: RegimeTributario): string {
 /**
  * Helper function to get tipo empresa display label.
  */
-export function getTipoEmpresaLabel(tipo: TipoEmpresa): string {
-  const labels: Record<TipoEmpresa, string> = {
+export function getTipoEmpresaLabel(tipo: TipoEmpresa | string): string {
+  const labels: Record<string, string> = {
     [TipoEmpresa.COMERCIO]: "Comércio",
     [TipoEmpresa.SERVICO]: "Serviço",
     [TipoEmpresa.INDUSTRIA]: "Indústria",
     [TipoEmpresa.MISTO]: "Misto",
   };
-  return labels[tipo];
+  return labels[tipo] || tipo;
+}
+
+/**
+ * Helper function to get servico contratado display label.
+ */
+export function getServicoContratadoLabel(servico: ServicoContratado | string): string {
+  const labels: Record<string, string> = {
+    [ServicoContratado.FISCAL]: "Fiscal",
+    [ServicoContratado.CONTABIL]: "Contábil",
+    [ServicoContratado.PESSOAL]: "Pessoal",
+  };
+  return labels[servico] || servico;
+}
+
+/**
+ * Helper function to get licenca necessaria display label.
+ */
+export function getLicencaNecessariaLabel(licenca: LicencaNecessaria | string): string {
+  const labels: Record<string, string> = {
+    [LicencaNecessaria.LICENCA_SANITARIA]: "Licença Sanitária",
+    [LicencaNecessaria.ARCB_BOMBEIROS]: "ARCB Bombeiros",
+    [LicencaNecessaria.LICENCA_OPERACOES]: "Licença de Operações",
+    [LicencaNecessaria.BAIXO_RISCO]: "Baixo Risco",
+    [LicencaNecessaria.CERT_ACESSIBILIDADE]: "Cert. de Acessibilidade",
+  };
+  return labels[licenca] || licenca;
+}
+
+// ========== KPI Stats ==========
+
+export interface ClientStats {
+  total: number;
+  ativos: number;
+  pendentes: number;
+  inativos: number;
+  receita_total: number;
+  ticket_medio: number;
+}
+
+// ========== Client Drafts ==========
+
+export interface ClientDraft {
+  id: string;
+  user_id: string;
+  draft_data: Partial<ClientCreate>;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientDraftCreate {
+  draft_data: Partial<ClientCreate>;
+  notes?: string | null;
+}
+
+// ========== Obligations Templates ==========
+
+export enum ObligationPeriodicidade {
+  MENSAL = "mensal",
+  ANUAL = "anual",
+}
+
+export interface ObligationTemplate {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  regime_tributario: RegimeTributario;
+  servico_contratado: ServicoContratado;
+  periodicidade: ObligationPeriodicidade;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Obligation {
+  nome: string;
+  periodicidade: ObligationPeriodicidade;
+  tipo: ServicoContratado; // fiscal, contabil, pessoal
+}
+
+export interface ObligationsGroup {
+  fiscal_mensal: Obligation[];
+  fiscal_anual: Obligation[];
+  contabil_mensal: Obligation[];
+  contabil_anual: Obligation[];
+  pessoal_mensal: Obligation[];
+  pessoal_anual: Obligation[];
 }

@@ -46,7 +46,7 @@ export function ObligationCell({ obligation, onComplete, onUndo, onDownload }: O
     }
   };
 
-  const isCompleted = obligation.status === "CONCLUIDA";
+  const isCompleted = obligation.status === "concluida";
 
   return (
     <td className="px-2 py-3 text-center">

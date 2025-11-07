@@ -57,10 +57,10 @@ export default function PortalFinanceiroPage() {
 
       // In a real scenario, we'd get client_id from user profile
       // For now, we'll fetch the first client associated with the user
-      const response = await financeApi.list({ size: 1 });
+      const response = await (financeApi as any).list({ size: 1 });
 
       if (response.items.length > 0 && response.items[0]?.client_id) {
-        const data = await financeApi.getClientSummary(response.items[0].client_id);
+        const data = await (financeApi as any).getClientSummary(response.items[0].client_id);
         setSummary(data);
       } else {
         setError("Nenhuma informação financeira disponível");

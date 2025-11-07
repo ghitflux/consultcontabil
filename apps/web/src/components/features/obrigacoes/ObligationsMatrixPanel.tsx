@@ -41,14 +41,6 @@ export function ObligationsMatrixPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Baixa de Obrigações — Painel Minimalista</h1>
-        <p className="text-sm text-default-500 mt-1">
-          Controle rápido de obrigações mensais por empresa
-        </p>
-      </div>
-
       {/* Filters */}
       <Card>
         <CardHeader className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between px-6 pt-6">

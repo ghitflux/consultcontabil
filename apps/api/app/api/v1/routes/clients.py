@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.deps import get_current_active_user, get_db, require_admin, require_admin_or_func
 from app.db.models.user import User
 from app.schemas.base import ResponseSchema
-from app.schemas.client import ClientCreate, ClientListItem, ClientResponse, ClientUpdate
+from app.schemas.client import ClientCreate, ClientDraftCreate, ClientListItem, ClientResponse, ClientUpdate
 from app.services.client import ClientService
 
 router = APIRouter(prefix="/clients", tags=["clients"])
@@ -194,4 +194,50 @@ async def delete_client(
     return ResponseSchema(
         success=True,
         message="Client deleted successfully"
+    )
+
+
+@router.get("/stats/summary", response_model=dict, status_code=status.HTTP_200_OK)
+async def get_client_stats(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: User = Depends(require_admin_or_func()),
+) -> dict:
+    """
+    Get client statistics and KPIs (admin or func only).
+
+    Returns:
+        Client statistics including totals by status and regime
+
+    Args:
+        db: Database session
+        _: Current user (must be admin or func)
+    """
+    service = ClientService(db)
+    return await service.get_stats()
+
+
+@router.post("/drafts", response_model=ResponseSchema, status_code=status.HTTP_201_CREATED)
+async def save_client_draft(
+    draft_data: ClientDraftCreate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: User = Depends(get_current_active_user),
+) -> ResponseSchema:
+    """
+    Save client form as draft for auto-save functionality.
+
+    Args:
+        draft_data: Draft data with partial client info
+        db: Database session
+        current_user: Current authenticated user
+
+    Returns:
+        Success message with draft ID
+    """
+    service = ClientService(db)
+    draft_id = await service.save_draft(draft_data, current_user.id)
+
+    return ResponseSchema(
+        success=True,
+        message="Draft saved successfully",
+        data={"draft_id": str(draft_id)}
     )

@@ -49,13 +49,13 @@ export function useObligationsMatrix() {
           ...row,
           obligations: row.obligations.map((ob) =>
             ob && ob.id === obligationId
-              ? { ...ob, status: 'CONCLUIDA' }
+              ? { ...ob, status: 'concluida' }
               : ob
           ),
           progress: {
             ...row.progress,
             completed:
-              row.obligations.filter((ob) => ob && (ob.id === obligationId || ob.status === 'CONCLUIDA')).length,
+              row.obligations.filter((ob) => ob && (ob.id === obligationId || ob.status === 'concluida')).length,
           },
         }))
       );
@@ -75,13 +75,13 @@ export function useObligationsMatrix() {
           ...row,
           obligations: row.obligations.map((ob) =>
             ob && ob.id === obligationId
-              ? { ...ob, status: 'PENDENTE' }
+              ? { ...ob, status: 'pendente' }
               : ob
           ),
           progress: {
             ...row.progress,
             completed: row.obligations.filter(
-              (ob) => ob && ob.status === 'CONCLUIDA' && ob.id !== obligationId
+              (ob) => ob && ob.status === 'concluida' && ob.id !== obligationId
             ).length,
           },
         }))

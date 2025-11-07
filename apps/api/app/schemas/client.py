@@ -102,7 +102,7 @@ class ClientBase(BaseSchema):
 class ClientCreate(ClientBase):
     """Schema for creating a new client."""
 
-    status: ClientStatus = ClientStatus.PENDENTE
+    status: ClientStatus = ClientStatus.ATIVO
 
 
 class ClientUpdate(BaseSchema):
@@ -161,3 +161,53 @@ class ClientListItem(TimestampSchema):
     honorarios_mensais: float
     regime_tributario: RegimeTributario
     tipo_empresa: TipoEmpresa
+
+
+class ClientDraftCreate(BaseSchema):
+    """Schema for saving client form draft (all fields optional)."""
+
+    draft_name: str = Field(..., min_length=1, max_length=100, description="Name for this draft")
+
+    # All client fields are optional in draft
+    razao_social: Optional[str] = None
+    nome_fantasia: Optional[str] = None
+    cnpj: Optional[str] = None
+    inscricao_estadual: Optional[str] = None
+    inscricao_municipal: Optional[str] = None
+    codigo_simples: Optional[str] = None
+
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    celular: Optional[str] = None
+
+    cep: Optional[str] = None
+    logradouro: Optional[str] = None
+    numero: Optional[str] = None
+    complemento: Optional[str] = None
+    bairro: Optional[str] = None
+    cidade: Optional[str] = None
+    uf: Optional[str] = None
+
+    honorarios_mensais: Optional[float] = None
+    dia_vencimento: Optional[int] = None
+
+    regime_tributario: Optional[str] = None
+    tipo_empresa: Optional[str] = None
+    tipos_empresa: Optional[list[str]] = None
+    data_abertura: Optional[str] = None
+    inicio_escritorio: Optional[str] = None
+
+    responsavel_nome: Optional[str] = None
+    responsavel_cpf: Optional[str] = None
+    responsavel_email: Optional[str] = None
+    responsavel_telefone: Optional[str] = None
+
+    senha_prefeitura: Optional[str] = None
+    login_seg_desemp: Optional[str] = None
+    senha_seg_desemp: Optional[str] = None
+    senha_gcw_resp: Optional[str] = None
+
+    servicos_contratados: Optional[list[str]] = None
+    licencas_necessarias: Optional[list[str]] = None
+
+    observacoes: Optional[str] = None

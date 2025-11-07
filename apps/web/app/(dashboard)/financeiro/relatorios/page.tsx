@@ -54,7 +54,7 @@ export default function RelatoriosPage() {
   const loadAgingReport = async () => {
     try {
       setLoading(true);
-      const data = await financeApi.getReceivablesAging();
+      const data = await (financeApi as any).getReceivablesAging();
       setAgingReport(data);
     } catch (error) {
       console.error("Error loading aging report:", error);
@@ -70,7 +70,7 @@ export default function RelatoriosPage() {
       setLoading(true);
       const startDate = `${startMonth}-01`;
       const endDate = `${endMonth}-01`;
-      const data = await financeApi.getRevenueByPeriod(startDate, endDate);
+      const data = await (financeApi as any).getRevenueByPeriod(startDate, endDate);
       setRevenueReport(data);
     } catch (error) {
       console.error("Error loading revenue report:", error);

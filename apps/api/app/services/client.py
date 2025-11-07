@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.client import Client
 from app.db.repositories.client import ClientRepository
-from app.schemas.client import ClientCreate, ClientListItem, ClientResponse, ClientUpdate
+from app.schemas.client import ClientCreate, ClientDraftCreate, ClientListItem, ClientResponse, ClientUpdate
 
 
 class ClientService:
@@ -242,3 +242,85 @@ class ClientService:
             }
             for c in clients
         ]
+
+    async def get_stats(self) -> dict:
+        """
+        Get client statistics.
+
+        Returns:
+            Dictionary with client statistics including:
+            - total: Total number of clients
+            - by_status: Breakdown by status
+            - by_regime: Breakdown by tax regime
+            - total_revenue: Total monthly revenue
+        """
+        from sqlalchemy import func, select
+        from app.db.models.client import Client, ClientStatus
+
+        # Total clients
+        total_query = select(func.count(Client.id)).where(Client.is_deleted == False)
+        total_result = await self.session.execute(total_query)
+        total = total_result.scalar() or 0
+
+        # By status
+        status_query = (
+            select(Client.status, func.count(Client.id))
+            .where(Client.is_deleted == False)
+            .group_by(Client.status)
+        )
+        status_result = await self.session.execute(status_query)
+        by_status = {status: count for status, count in status_result.all()}
+
+        # By regime
+        regime_query = (
+            select(Client.regime_tributario, func.count(Client.id))
+            .where(Client.is_deleted == False)
+            .group_by(Client.regime_tributario)
+        )
+        regime_result = await self.session.execute(regime_query)
+        by_regime = {regime: count for regime, count in regime_result.all()}
+
+        # Total revenue
+        revenue_query = select(func.sum(Client.honorarios_mensais)).where(
+            Client.is_deleted == False,
+            Client.status == ClientStatus.ATIVO
+        )
+        revenue_result = await self.session.execute(revenue_query)
+        total_revenue = revenue_result.scalar() or 0.0
+
+        return {
+            "total": total,
+            "by_status": by_status,
+            "by_regime": by_regime,
+            "total_revenue": float(total_revenue),
+        }
+
+    async def save_draft(self, draft_data: ClientDraftCreate, user_id: UUID) -> UUID:
+        """
+        Save client form draft.
+
+        Args:
+            draft_data: Draft data
+            user_id: User ID who created the draft
+
+        Returns:
+            Draft ID
+        """
+        from app.db.models.client_draft import ClientDraft
+        import json
+
+        # Convert draft data to JSON
+        draft_json = draft_data.model_dump(exclude={"draft_name"})
+
+        # Create draft
+        draft = ClientDraft(
+            name=draft_data.draft_name,
+            data=draft_json,
+            user_id=user_id
+        )
+
+        self.session.add(draft)
+        await self.session.commit()
+        await self.session.refresh(draft)
+
+        return draft.id

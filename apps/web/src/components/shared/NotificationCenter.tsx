@@ -11,6 +11,7 @@ import {
   Chip,
 } from "@/heroui";
 import { useNotifications, Notification } from "@/hooks/websocket/useNotifications";
+import { BellIcon } from "@/lib/icons";
 import { useState } from "react";
 
 export function NotificationCenter() {
@@ -97,10 +98,10 @@ export function NotificationCenter() {
         >
           {unreadCount > 0 ? (
             <Badge content={unreadCount} color="danger" size="sm">
-              <span className="text-xl">🔔</span>
+              <BellIcon className="h-5 w-5" />
             </Badge>
           ) : (
-            <span className="text-xl">🔔</span>
+            <BellIcon className="h-5 w-5" />
           )}
         </Button>
       </DropdownTrigger>

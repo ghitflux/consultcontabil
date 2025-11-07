@@ -579,7 +579,7 @@ async def get_obligations_matrix(
             obligations_data.append(obligations_by_type.get(type_name))
 
         # Calculate progress
-        completed = sum(1 for ob_data in obligations_data if ob_data and ob_data["status"] == "CONCLUIDA")
+        completed = sum(1 for ob_data in obligations_data if ob_data and ob_data["status"] == "concluida")
         total = len([ob for ob in obligations_data if ob is not None])
 
         matrix.append({
@@ -615,7 +615,7 @@ async def complete_obligation(
         )
 
     # Validate status
-    if obligation.status == ObligationStatus.COMPLETED:
+    if obligation.status == ObligationStatus.CONCLUIDA:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Obligation already completed",
@@ -625,7 +625,7 @@ async def complete_obligation(
     now = datetime.utcnow()
     obligation = await repo.update_status(
         obligation_id=obligation_id,
-        status=ObligationStatus.COMPLETED,
+        status=ObligationStatus.CONCLUIDA,
         completed_at=now,
         processed_by_id=current_user.id,
     )
