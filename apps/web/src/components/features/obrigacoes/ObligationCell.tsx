@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@heroui/react";
-import { CheckCircleIcon, RefreshCwIcon, DownloadIcon } from "@/lib/icons";
+import { CheckCircleIcon, RefreshIcon, DownloadIcon } from "@/lib/icons";
 import type { ObligationData } from "@/hooks/useObligationsMatrix";
 
 interface ObligationCellProps {
@@ -84,7 +84,7 @@ export function ObligationCell({ obligation, onComplete, onUndo, onDownload }: O
             className="min-w-unit-6"
             title="Desfazer"
           >
-            <RefreshCwIcon className="h-4 w-4" />
+            <RefreshIcon className="h-4 w-4" />
           </Button>
           {obligation.receipt_url && (
             <Button
