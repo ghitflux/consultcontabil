@@ -665,3 +665,93 @@ async def undo_obligation(
         notes="Undone from minimalist panel"
     )
     return _obligation_to_response(obligation)
+
+
+@router.get("/list", response_model=list[dict])
+async def list_obligations_simple(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    month: int = Query(..., ge=1, le=12, description="Month"),
+    year: int = Query(..., ge=2020, le=2100, description="Year"),
+    search: Optional[str] = Query(None, description="Search by company name"),
+    category: str = Query("clients", description="Category: clients or office"),
+):
+    """
+    Simple list of obligations for matrix view.
+    Returns obligations grouped by client with fixed type columns.
+    """
+    from sqlalchemy import select, func
+    from app.db.models.client import Client
+    from app.db.models.obligation import Obligation
+    from app.db.models.obligation_type import ObligationType
+
+    # Fixed obligation types (order matters for frontend)
+    FIXED_TYPES = [
+        "DAS",
+        "DCTFWeb",
+        "EFD-Contribuições",
+        "ECD",
+        "ECF",
+        "ISS",
+        "FGTS",
+        "INSS/eSocial",
+    ]
+
+    if category == "office":
+        # TODO: Implementar obrigações do escritório
+        # Por enquanto retorna lista vazia
+        return []
+
+    # Query clients
+    query = select(Client).where(Client.deleted_at.is_(None), Client.status == "ativo")
+    if search:
+        query = query.where(Client.razao_social.ilike(f"%{search}%"))
+    query = query.order_by(Client.razao_social)
+
+    result = await db.execute(query)
+    clients = result.scalars().all()
+
+    # Build list
+    obligations_list = []
+    for client in clients:
+        # Get client's obligations for this month/year
+        oblig_query = select(Obligation).join(ObligationType).where(
+            Obligation.client_id == client.id,
+            func.extract('month', Obligation.due_date) == month,
+            func.extract('year', Obligation.due_date) == year,
+            Obligation.deleted_at.is_(None)
+        )
+        oblig_result = await db.execute(oblig_query)
+        obligations = oblig_result.scalars().all()
+
+        # Map obligations by type name
+        obligations_by_type = {}
+        for ob in obligations:
+            if ob.obligation_type:
+                type_name = ob.obligation_type.name
+                obligations_by_type[type_name] = {
+                    "id": str(ob.id),
+                    "status": ob.status.value,
+                    "receipt_url": ob.receipt_url,
+                    "due_date": ob.due_date.isoformat() if ob.due_date else None,
+                    "obligation_type_name": ob.obligation_type.name,
+                }
+
+        # Build obligations dict for fixed types
+        obligations_data = {}
+        for type_name in FIXED_TYPES:
+            obligations_data[type_name] = obligations_by_type.get(type_name)
+
+        # Calculate progress
+        total_applicable = len([v for v in obligations_data.values() if v is not None])
+        completed = sum(1 for v in obligations_data.values() if v and v["status"] == "concluida")
+
+        obligations_list.append({
+            "client_id": str(client.id),
+            "client_name": client.razao_social,
+            "client_cnpj": client.cnpj,
+            "obligations": obligations_data,
+            "progress": {"completed": completed, "total": total_applicable}
+        })
+
+    return obligations_list

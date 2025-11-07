@@ -67,7 +67,10 @@
       "Bash(timeout 120 pnpm build:*)",
       "Bash(timeout 5 venv/Scripts/python.exe -c:*)",
       "Bash(netstat:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(timeout:*)",
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []
