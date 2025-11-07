@@ -205,6 +205,97 @@ export class ApiClient {
   ): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: "DELETE" });
   }
+
+  async upload<T = any>(
+    endpoint: string,
+    formData: FormData,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${API_BASE_URL}${endpoint}`;
+
+    // Add Authorization header if token is available
+    const headers = new Headers(options.headers);
+    // Try to get token from localStorage if not already set
+    if (!this.accessToken && typeof window !== "undefined") {
+      this.accessToken = localStorage.getItem("access_token");
+    }
+    if (this.accessToken && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${this.accessToken}`);
+    }
+    // Do NOT set Content-Type for FormData - browser sets it with boundary
+
+    const config: RequestInit = {
+      ...options,
+      method: "POST",
+      headers,
+      body: formData,
+    };
+
+    let response = await fetch(url, config);
+
+    // Handle 401 - Try to refresh token
+    if (response.status === 401 && this.refreshToken) {
+      if (isRefreshing) {
+        // Wait for ongoing refresh to complete
+        return new Promise((resolve, reject) => {
+          addRefreshSubscriber(async (token: string) => {
+            try {
+              headers.set("Authorization", `Bearer ${token}`);
+              const retryResponse = await fetch(url, { ...config, headers });
+              if (retryResponse.ok) {
+                resolve(await retryResponse.json());
+              } else {
+                reject(new Error("Retry request failed"));
+              }
+            } catch (error) {
+              reject(error);
+            }
+          });
+        });
+      }
+
+      isRefreshing = true;
+
+      try {
+        const newToken = await this.refreshAccessToken();
+        isRefreshing = false;
+        onRefreshed(newToken);
+
+        // Save new token to localStorage
+        if (typeof window !== "undefined") {
+          localStorage.setItem("access_token", newToken);
+        }
+
+        // Retry original request with new token
+        headers.set("Authorization", `Bearer ${newToken}`);
+        response = await fetch(url, { ...config, headers });
+      } catch (error) {
+        isRefreshing = false;
+        this.clearTokens();
+        throw error;
+      }
+    }
+
+    // Handle non-OK responses
+    if (!response.ok) {
+      const error: ApiError = new Error(`API Error: ${response.statusText}`);
+      error.status = response.status;
+      try {
+        error.data = await response.json();
+      } catch {
+        // Response is not JSON
+      }
+      throw error;
+    }
+
+    // Return JSON response
+    try {
+      return await response.json();
+    } catch {
+      // Response is not JSON (e.g., 204 No Content)
+      return undefined as T;
+    }
+  }
 }
 
 // Export singleton instance

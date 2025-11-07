@@ -6,6 +6,7 @@ export interface ObligationData {
   status: string;
   receipt_url?: string;
   due_date?: string;
+  obligation_type_name?: string;
 }
 
 export interface ClientMatrixRow {
@@ -92,6 +93,32 @@ export function useObligationsMatrix() {
     }
   }, []);
 
+  const uploadReceipt = useCallback(async (obligationId: string, file: File, notes?: string) => {
+    try {
+      const response = await obligationsApi.uploadReceipt(obligationId, file, notes);
+
+      // Update matrix locally
+      setMatrix((prev) =>
+        prev.map((row) => ({
+          ...row,
+          obligations: row.obligations.map((ob) =>
+            ob && ob.id === obligationId
+              ? { ...ob, status: 'concluida', receipt_url: response.receipt_url }
+              : ob
+          ),
+          progress: {
+            ...row.progress,
+            completed:
+              row.obligations.filter((ob) => ob && (ob.id === obligationId || ob.status === 'concluida')).length,
+          },
+        }))
+      );
+    } catch (err) {
+      console.error('Error uploading receipt:', err);
+      throw err;
+    }
+  }, []);
+
   const downloadReceipt = useCallback((receiptUrl: string) => {
     window.open(receiptUrl, '_blank');
   }, []);
@@ -102,6 +129,7 @@ export function useObligationsMatrix() {
     error,
     fetchMatrix,
     completeObligation,
+    uploadReceipt,
     undoObligation,
     downloadReceipt,
   };

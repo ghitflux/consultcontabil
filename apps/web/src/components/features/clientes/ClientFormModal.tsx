@@ -179,9 +179,9 @@ export function ClientFormModal({ client, isOpen, onClose, onSave }: ClientFormM
               </h2>
             </ModalHeader>
             <ModalBody className="overflow-y-auto px-6 py-6">
-              {/* @ts-expect-error - Type mismatch from resolver type issue */}
               <form
                 id="client-form"
+                // @ts-ignore - Type mismatch from resolver
                 onSubmit={handleSubmit(onSubmit)}
                 className="space-y-6"
               >

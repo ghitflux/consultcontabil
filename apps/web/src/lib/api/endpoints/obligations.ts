@@ -54,4 +54,17 @@ export const obligationsApi = {
   async undo(obligationId: string): Promise<ObligationResponse> {
     return apiClient.post<ObligationResponse>(`/obligations/${obligationId}/undo`, {});
   },
+
+  /**
+   * Upload receipt and mark obligation as completed
+   */
+  async uploadReceipt(obligationId: string, file: File, notes?: string): Promise<ObligationResponse> {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (notes) {
+      formData.append("notes", notes);
+    }
+
+    return apiClient.upload<ObligationResponse>(`/obligations/${obligationId}/receipt`, formData);
+  },
 };

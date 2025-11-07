@@ -3,19 +3,14 @@
 import { useState } from "react";
 import { Card, CardBody, Tabs, Tab } from "@/heroui";
 import { ObligationsMatrixPanel } from "@/components/features/obrigacoes/ObligationsMatrixPanel";
-import { ObligationsMatrixTable } from "@/components/features/obrigacoes/ObligationsMatrixTable";
-import dynamic from 'next/dynamic';
+import { ObligationsOfficeView } from "@/components/features/obrigacoes/ObligationsOfficeView";
+import { ObligationsClientView } from "@/components/features/obrigacoes/ObligationsClientView";
+import { TableIcon, Building2Icon, UserIcon } from "@/lib/icons";
 
-// Dynamic import for heavy components
-const ObligationTimeline = dynamic(() =>
-  import("@/components/features/obrigacoes/ObligationTimeline").then(mod => ({ default: mod.ObligationTimeline })),
-  { ssr: false }
-);
-
-type TabKey = "minimalist" | "office" | "client";
+type TabKey = "matrix" | "office" | "client";
 
 export default function ObrigacoesPage() {
-  const [activeTab, setActiveTab] = useState<TabKey>("minimalist");
+  const [activeTab, setActiveTab] = useState<TabKey>("matrix");
 
   return (
     <div className="space-y-6">
@@ -35,16 +30,24 @@ export default function ObrigacoesPage() {
             onSelectionChange={(key) => setActiveTab(key as TabKey)}
             aria-label="Visualizações de obrigações"
             color="primary"
+            variant="underlined"
+            classNames={{
+              tabList: "gap-6",
+              cursor: "w-full",
+              tab: "max-w-fit",
+              tabContent: "group-data-[selected=true]:text-primary"
+            }}
           >
             <Tab
-              key="minimalist"
+              key="matrix"
               title={
                 <div className="flex items-center gap-2">
-                  <span>Painel Minimalista</span>
+                  <TableIcon className="h-4 w-4" />
+                  <span>Matriz Completa</span>
                 </div>
               }
             >
-              <div className="mt-4">
+              <div className="mt-6">
                 <ObligationsMatrixPanel />
               </div>
             </Tab>
@@ -53,12 +56,13 @@ export default function ObrigacoesPage() {
               key="office"
               title={
                 <div className="flex items-center gap-2">
-                  <span>Obrigações do Escritório</span>
+                  <Building2Icon className="h-4 w-4" />
+                  <span>Visão do Escritório</span>
                 </div>
               }
             >
-              <div className="mt-4">
-                <ObligationsMatrixTable viewMode="office" />
+              <div className="mt-6">
+                <ObligationsOfficeView />
               </div>
             </Tab>
 
@@ -66,12 +70,13 @@ export default function ObrigacoesPage() {
               key="client"
               title={
                 <div className="flex items-center gap-2">
+                  <UserIcon className="h-4 w-4" />
                   <span>Cliente Específico</span>
                 </div>
               }
             >
-              <div className="mt-4">
-                <ObligationsMatrixTable viewMode="client" />
+              <div className="mt-6">
+                <ObligationsClientView />
               </div>
             </Tab>
           </Tabs>

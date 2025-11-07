@@ -21,7 +21,7 @@ export function ObligationsMatrixPanel() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { matrix, isLoading, error, fetchMatrix, completeObligation, undoObligation, downloadReceipt } =
+  const { matrix, isLoading, error, fetchMatrix, uploadReceipt, undoObligation, downloadReceipt } =
     useObligationsMatrix();
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export function ObligationsMatrixPanel() {
 
         <CardBody className="px-6 pb-6">
           <div className="text-sm text-default-500 p-3 bg-default-100 rounded-lg">
-            💡 <strong>Dica:</strong> Clique em <strong>Baixar</strong> para marcar a obrigação como entregue. Você pode desfazer clicando no ícone de atualizar.
+            💡 <strong>Dica:</strong> Clique em <strong>Baixar</strong> para anexar o comprovante e marcar a obrigação como entregue. Você pode desfazer clicando no ícone de atualizar.
           </div>
         </CardBody>
       </Card>
@@ -121,8 +121,17 @@ export function ObligationsMatrixPanel() {
                         <ObligationCell
                           key={`${row.client_id}-${index}`}
                           obligation={obligation}
-                          onComplete={() => obligation && completeObligation(obligation.id)}
-                          onUndo={() => obligation && undoObligation(obligation.id)}
+                          clientName={row.client_name}
+                          onComplete={async (file, notes) => {
+                            if (obligation) {
+                              await uploadReceipt(obligation.id, file, notes);
+                            }
+                          }}
+                          onUndo={async () => {
+                            if (obligation) {
+                              await undoObligation(obligation.id);
+                            }
+                          }}
                           onDownload={() =>
                             obligation?.receipt_url && downloadReceipt(obligation.receipt_url)
                           }
