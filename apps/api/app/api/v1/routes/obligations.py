@@ -462,3 +462,205 @@ async def get_overdue_obligations(
             obligations_with_relations.append(_obligation_to_response(ob_with_relations))
 
     return obligations_with_relations
+
+
+@router.get("/templates/list", response_model=list[dict])
+async def get_obligation_templates(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    servico_contratado: Optional[str] = Query(None, description="Filter by service type"),
+):
+    """
+    Get obligation templates for auto-suggestions.
+
+    Returns templates filtered by service type if provided.
+    Admin/Func: Can see all templates
+    """
+    if current_user.role not in [UserRole.ADMIN, UserRole.FUNC]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin/func can access obligation templates",
+        )
+
+    from app.db.models.obligation_template import ObligationTemplate
+    from sqlalchemy import select
+
+    query = select(ObligationTemplate).where(ObligationTemplate.is_active == True)
+
+    if servico_contratado:
+        query = query.where(ObligationTemplate.servico_contratado == servico_contratado)
+
+    query = query.order_by(ObligationTemplate.periodicidade, ObligationTemplate.nome)
+
+    result = await db.execute(query)
+    templates = result.scalars().all()
+
+    return [
+        {
+            "id": str(t.id),
+            "nome": t.nome,
+            "descricao": t.descricao,
+            "periodicidade": t.periodicidade,
+            "servico_contratado": t.servico_contratado,
+            "dia_vencimento": t.dia_vencimento,
+        }
+        for t in templates
+    ]
+
+
+@router.get("/matrix", response_model=list[dict])
+async def get_obligations_matrix(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    month: int = Query(..., ge=1, le=12, description="Month"),
+    year: int = Query(..., ge=2020, le=2100, description="Year"),
+    search: Optional[str] = Query(None, description="Search by company name"),
+):
+    """
+    Get obligations matrix (Companies x Obligation Types).
+
+    Returns a matrix structure for the minimalist panel with:
+    - List of clients
+    - Each client's obligations for the specified month/year
+    - Progress counter
+    """
+    from sqlalchemy import select, func
+    from app.db.models.client import Client
+    from app.db.models.obligation import Obligation
+    from app.db.models.obligation_type import ObligationType
+
+    # Fixed obligation types for matrix
+    FIXED_TYPES = [
+        "DCTFWeb",
+        "EFD-Contribuições",
+        "ECD",
+        "ECF",
+        "ISS",
+        "FGTS",
+        "INSS/eSocial"
+    ]
+
+    # Query clients
+    query = select(Client).where(Client.deleted_at.is_(None))
+    if search:
+        query = query.where(Client.razao_social.ilike(f"%{search}%"))
+    query = query.order_by(Client.razao_social)
+
+    result = await db.execute(query)
+    clients = result.scalars().all()
+
+    # Build matrix
+    matrix = []
+    for client in clients:
+        # Get client's obligations for this month/year
+        oblig_query = select(Obligation).join(ObligationType).where(
+            Obligation.client_id == client.id,
+            func.extract('month', Obligation.due_date) == month,
+            func.extract('year', Obligation.due_date) == year
+        )
+        oblig_result = await db.execute(oblig_query)
+        obligations = oblig_result.scalars().all()
+
+        # Map obligations by type name
+        obligations_by_type = {}
+        for ob in obligations:
+            if ob.obligation_type:
+                type_name = ob.obligation_type.name
+                obligations_by_type[type_name] = {
+                    "id": str(ob.id),
+                    "status": ob.status.value,
+                    "receipt_url": ob.receipt_url,
+                    "due_date": ob.due_date.isoformat() if ob.due_date else None,
+                }
+
+        # Build obligations array for fixed types
+        obligations_data = []
+        for type_name in FIXED_TYPES:
+            obligations_data.append(obligations_by_type.get(type_name))
+
+        # Calculate progress
+        completed = sum(1 for ob_data in obligations_data if ob_data and ob_data["status"] == "CONCLUIDA")
+        total = len([ob for ob in obligations_data if ob is not None])
+
+        matrix.append({
+            "client_id": str(client.id),
+            "client_name": client.razao_social,
+            "client_cnpj": client.cnpj,
+            "obligations": obligations_data,
+            "progress": {"completed": completed, "total": total}
+        })
+
+    return matrix
+
+
+@router.post("/{obligation_id}/complete", response_model=ObligationResponse)
+async def complete_obligation(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    obligation_id: UUID,
+):
+    """
+    Mark obligation as completed without receipt.
+    Quick action for the minimalist panel.
+    """
+    processor = ObligationProcessor(db, websocket_manager)
+
+    # Get obligation
+    repo = ObligationRepository(db)
+    obligation = await repo.get_by_id_with_relations(obligation_id)
+    if not obligation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Obligation not found",
+        )
+
+    # Validate status
+    if obligation.status == ObligationStatus.COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Obligation already completed",
+        )
+
+    # Update status
+    now = datetime.utcnow()
+    obligation = await repo.update_status(
+        obligation_id=obligation_id,
+        status=ObligationStatus.COMPLETED,
+        completed_at=now,
+        processed_by_id=current_user.id,
+    )
+
+    # Create event
+    event_repo = ObligationEventRepository(db)
+    from app.db.models.obligation_event import ObligationEvent, ObligationEventType
+    event = ObligationEvent(
+        obligation_id=obligation_id,
+        event_type=ObligationEventType.STATUS_CHANGED,
+        description="Obligation marked as completed",
+        performed_by_id=current_user.id,
+        metadata={"completed_at": now.isoformat()},
+    )
+    await event_repo.create(event)
+
+    await db.commit()
+    await db.refresh(obligation)
+
+    return _obligation_to_response(obligation)
+
+
+@router.post("/{obligation_id}/undo", response_model=ObligationResponse)
+async def undo_obligation(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    obligation_id: UUID,
+):
+    """
+    Undo obligation completion (mark back as pending).
+    """
+    processor = ObligationProcessor(db, websocket_manager)
+    obligation = await processor.mark_as_pending(
+        obligation_id=obligation_id,
+        performed_by_id=current_user.id,
+        notes="Undone from minimalist panel"
+    )
+    return _obligation_to_response(obligation)
