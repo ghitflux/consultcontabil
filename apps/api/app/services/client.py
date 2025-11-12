@@ -2,6 +2,8 @@
 Client service with business logic.
 """
 
+import secrets
+import string
 from typing import Optional
 from uuid import UUID
 
@@ -9,8 +11,10 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.client import Client
+from app.db.models.client_user import ClientUser, ClientAccessLevel
+from app.db.models.user import User, UserRole
 from app.db.repositories.client import ClientRepository
-from app.schemas.client import ClientCreate, ClientDraftCreate, ClientListItem, ClientResponse, ClientUpdate
+from app.schemas.client import ClientCreate, ClientCreateResponse, ClientDraftCreate, ClientListItem, ClientResponse, ClientUpdate
 
 
 class ClientService:
@@ -26,18 +30,32 @@ class ClientService:
         self.session = session
         self.repo = ClientRepository(session)
 
-    async def create_client(self, client_data: ClientCreate) -> ClientResponse:
+    def _generate_temporary_password(self, length: int = 12) -> str:
         """
-        Create a new client.
+        Generate a secure temporary password.
+
+        Args:
+            length: Password length
+
+        Returns:
+            Temporary password
+        """
+        alphabet = string.ascii_letters + string.digits + "!@#$%&*"
+        password = ''.join(secrets.choice(alphabet) for _ in range(length))
+        return password
+
+    async def create_client(self, client_data: ClientCreate) -> ClientCreateResponse:
+        """
+        Create a new client with optional user creation.
 
         Args:
             client_data: Client creation data
 
         Returns:
-            Created client
+            Created client with user info if created
 
         Raises:
-            HTTPException: If CNPJ already exists
+            HTTPException: If CNPJ already exists or user email already exists
         """
         # Check if CNPJ already exists
         if await self.repo.cnpj_exists(client_data.cnpj):
@@ -46,13 +64,81 @@ class ClientService:
                 detail="CNPJ already registered"
             )
 
-        # Create client
-        client = Client(**client_data.model_dump())
+        # Extract user creation fields before creating client
+        create_user = client_data.create_user
+        user_email = client_data.user_email
+        user_name = client_data.user_name
+
+        # Create client (exclude user creation fields)
+        client_dict = client_data.model_dump(exclude={"create_user", "user_email", "user_name"})
+        client = Client(**client_dict)
         client = await self.repo.create(client)
+        await self.session.flush()  # Flush to get client.id
+
+        # Create user if requested
+        user_created = False
+        temporary_password = None
+        final_user_email = None
+
+        if create_user:
+            # Determine user email
+            final_user_email = user_email or client_data.responsavel_email or client_data.email
+
+            if not final_user_email:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email do usuário é obrigatório quando create_user=True"
+                )
+
+            # Check if user email already exists
+            from sqlalchemy import select
+            existing_user = await self.session.execute(
+                select(User).where(User.email == final_user_email)
+            )
+            if existing_user.scalar_one_or_none():
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Email {final_user_email} já está em uso"
+                )
+
+            # Determine user name
+            final_user_name = user_name or client_data.responsavel_nome or client_data.razao_social
+
+            # Generate temporary password
+            temporary_password = self._generate_temporary_password()
+
+            # Create user
+            new_user = User(
+                name=final_user_name,
+                email=final_user_email,
+                role=UserRole.CLIENTE,
+                is_active=True,
+                is_verified=False,
+                primary_client_id=client.id
+            )
+            new_user.set_password(temporary_password)
+            self.session.add(new_user)
+            await self.session.flush()
+
+            # Create client-user relationship
+            client_user = ClientUser(
+                client_id=client.id,
+                user_id=new_user.id,
+                access_level=ClientAccessLevel.OWNER
+            )
+            self.session.add(client_user)
+
+            user_created = True
+
         await self.session.commit()
         await self.session.refresh(client)
 
-        return ClientResponse.model_validate(client)
+        return ClientCreateResponse(
+            client=ClientResponse.model_validate(client),
+            user_created=user_created,
+            user_email=final_user_email if user_created else None,
+            temporary_password=temporary_password if user_created else None
+        )
 
     async def get_client(self, client_id: UUID) -> ClientResponse:
         """

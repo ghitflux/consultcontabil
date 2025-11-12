@@ -71,3 +71,58 @@ export function isFuncionario(user: User | null): boolean {
 export function isCliente(user: User | null): boolean {
   return hasRole(user, [UserRole.CLIENTE]);
 }
+
+// Additional types for user management
+
+export interface UserListItem extends User {}
+
+export interface UserResetPasswordRequest {
+  generate_temporary?: boolean;
+  new_password?: string;
+}
+
+export interface UserResetPasswordResponse {
+  success: boolean;
+  temporary_password?: string;
+  message: string;
+}
+
+export interface PaginatedUsersResponse {
+  items: UserListItem[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+}
+
+export interface LinkUserToClientRequest {
+  user_id: string;
+  access_level: "OWNER" | "MANAGER" | "VIEWER";
+}
+
+// Helper functions
+export const getRoleLabel = (role: UserRole): string => {
+  const labels: Record<UserRole, string> = {
+    [UserRole.ADMIN]: "Administrador",
+    [UserRole.FUNC]: "Funcionário",
+    [UserRole.CLIENTE]: "Cliente",
+  };
+  return labels[role];
+};
+
+export const getRoleColor = (role: UserRole): "danger" | "primary" | "secondary" => {
+  const colors: Record<UserRole, "danger" | "primary" | "secondary"> = {
+    [UserRole.ADMIN]: "danger",
+    [UserRole.FUNC]: "primary",
+    [UserRole.CLIENTE]: "secondary",
+  };
+  return colors[role];
+};
+
+export const getStatusLabel = (is_active: boolean): string => {
+  return is_active ? "Ativo" : "Inativo";
+};
+
+export const getStatusColor = (is_active: boolean): "success" | "default" => {
+  return is_active ? "success" : "default";
+};

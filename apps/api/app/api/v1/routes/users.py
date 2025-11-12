@@ -17,7 +17,16 @@ from app.api.v1.deps import (
 from app.db.models.user import User
 from app.db.repositories.user import UserRepository
 from app.schemas.base import ResponseSchema
-from app.schemas.user import UserCreate, UserResponse, UserUpdate, UserUpdatePassword
+from app.schemas.user import (
+    UserCreate,
+    UserListItem,
+    UserResetPasswordRequest,
+    UserResetPasswordResponse,
+    UserResponse,
+    UserUpdate,
+    UserUpdatePassword,
+)
+from app.services.user import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -269,3 +278,124 @@ async def delete_user(
         success=True,
         message="User deleted successfully"
     )
+
+
+@router.get("", response_model=dict, status_code=status.HTTP_200_OK)
+async def list_users(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: User = Depends(require_admin()),
+    query: str | None = None,
+    role: str | None = None,
+    is_active: bool | None = None,
+    page: int = 1,
+    size: int = 10,
+) -> dict:
+    """
+    List all users with filters and pagination (admin only).
+
+    Args:
+        db: Database session
+        _: Current user (must be admin)
+        query: Optional search term (name or email)
+        role: Optional role filter
+        is_active: Optional active status filter
+        page: Page number (1-indexed)
+        size: Page size
+
+    Returns:
+        Paginated list of users
+    """
+    service = UserService(db)
+    return await service.list_users(
+        query=query,
+        role=role,
+        is_active=is_active,
+        page=page,
+        size=size,
+    )
+
+
+@router.patch("/{user_id}/activate", response_model=ResponseSchema, status_code=status.HTTP_200_OK)
+async def activate_user(
+    user_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: User = Depends(require_admin()),
+) -> ResponseSchema:
+    """
+    Activate user (admin only).
+
+    Args:
+        user_id: User UUID
+        db: Database session
+        _: Current user (must be admin)
+
+    Returns:
+        Success message
+
+    Raises:
+        HTTPException: 404 if user not found
+    """
+    service = UserService(db)
+    await service.activate_user(user_id)
+
+    return ResponseSchema(
+        success=True,
+        message="User activated successfully"
+    )
+
+
+@router.patch("/{user_id}/deactivate", response_model=ResponseSchema, status_code=status.HTTP_200_OK)
+async def deactivate_user(
+    user_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: User = Depends(require_admin()),
+) -> ResponseSchema:
+    """
+    Deactivate user (admin only).
+
+    Args:
+        user_id: User UUID
+        db: Database session
+        _: Current user (must be admin)
+
+    Returns:
+        Success message
+
+    Raises:
+        HTTPException: 404 if user not found
+    """
+    service = UserService(db)
+    await service.deactivate_user(user_id)
+
+    return ResponseSchema(
+        success=True,
+        message="User deactivated successfully"
+    )
+
+
+@router.post("/{user_id}/reset-password", response_model=UserResetPasswordResponse, status_code=status.HTTP_200_OK)
+async def reset_user_password(
+    user_id: UUID,
+    reset_data: UserResetPasswordRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: User = Depends(require_admin()),
+) -> UserResetPasswordResponse:
+    """
+    Reset user password (admin only).
+
+    Generates a temporary password or sets a new password.
+
+    Args:
+        user_id: User UUID
+        reset_data: Reset password data
+        db: Database session
+        _: Current user (must be admin)
+
+    Returns:
+        Reset password response with temporary password if generated
+
+    Raises:
+        HTTPException: 404 if user not found, 400 if invalid data
+    """
+    service = UserService(db)
+    return await service.reset_password(user_id, reset_data)

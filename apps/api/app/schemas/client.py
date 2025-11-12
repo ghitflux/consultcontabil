@@ -104,6 +104,21 @@ class ClientCreate(ClientBase):
 
     status: ClientStatus = ClientStatus.ATIVO
 
+    # User creation fields (optional)
+    create_user: bool = Field(
+        default=True,
+        description="Se verdadeiro, cria automaticamente um usuário com role CLIENTE para este cliente"
+    )
+    user_email: Optional[EmailStr] = Field(
+        None,
+        description="Email do usuário a ser criado. Se não fornecido, usa o email do responsável ou do cliente"
+    )
+    user_name: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Nome do usuário a ser criado. Se não fornecido, usa o nome do responsável"
+    )
+
 
 class ClientUpdate(BaseSchema):
     """Schema for updating a client."""
@@ -147,6 +162,15 @@ class ClientResponse(ClientBase, TimestampSchema):
 
     id: UUID
     status: ClientStatus
+
+
+class ClientCreateResponse(BaseSchema):
+    """Schema for client creation response with optional user info."""
+
+    client: ClientResponse
+    user_created: bool = False
+    user_email: Optional[str] = None
+    temporary_password: Optional[str] = None
 
 
 class ClientListItem(TimestampSchema):

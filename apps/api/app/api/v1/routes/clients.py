@@ -11,8 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.deps import get_current_active_user, get_db, require_admin, require_admin_or_func
 from app.db.models.user import User
 from app.schemas.base import ResponseSchema
-from app.schemas.client import ClientCreate, ClientDraftCreate, ClientListItem, ClientResponse, ClientUpdate
+from app.schemas.client import ClientCreate, ClientCreateResponse, ClientDraftCreate, ClientListItem, ClientResponse, ClientUpdate
 from app.services.client import ClientService
+from app.services.user import UserService
+from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
@@ -118,14 +120,14 @@ async def get_client(
     return client
 
 
-@router.post("", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ClientCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_client(
     client_data: ClientCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
     _: User = Depends(require_admin_or_func()),
-) -> ClientResponse:
+) -> ClientCreateResponse:
     """
-    Create a new client (admin or func only).
+    Create a new client with optional user creation (admin or func only).
 
     Args:
         client_data: Client creation data
@@ -133,10 +135,10 @@ async def create_client(
         _: Current user (must be admin or func)
 
     Returns:
-        Created client
+        Created client with user info if created
 
     Raises:
-        HTTPException: 409 if CNPJ already exists
+        HTTPException: 409 if CNPJ or user email already exists
     """
     service = ClientService(db)
     return await service.create_client(client_data)
@@ -240,4 +242,52 @@ async def save_client_draft(
         success=True,
         message="Draft saved successfully",
         data={"draft_id": str(draft_id)}
+    )
+
+
+class LinkUserRequest(BaseModel):
+    """Schema for linking user to client."""
+    user_id: UUID
+    access_level: str = Field(default="VIEWER", description="Access level: OWNER, MANAGER, or VIEWER")
+
+
+@router.post("/{client_id}/users", response_model=ResponseSchema, status_code=status.HTTP_201_CREATED)
+async def link_user_to_client(
+    client_id: UUID,
+    link_data: LinkUserRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: User = Depends(require_admin_or_func()),
+) -> ResponseSchema:
+    """
+    Link an existing user to a client (admin or func only).
+
+    Args:
+        client_id: Client UUID
+        link_data: User link data
+        db: Database session
+        _: Current user (must be admin or func)
+
+    Returns:
+        Success message
+
+    Raises:
+        HTTPException: 404 if not found, 409 if already linked
+    """
+    from app.db.models.client_user import ClientAccessLevel
+
+    # Convert access level string to enum
+    try:
+        access_level = ClientAccessLevel(link_data.access_level)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid access level. Must be one of: OWNER, MANAGER, VIEWER"
+        )
+
+    user_service = UserService(db)
+    await user_service.link_user_to_client(client_id, link_data.user_id, access_level)
+
+    return ResponseSchema(
+        success=True,
+        message="User linked to client successfully"
     )

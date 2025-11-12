@@ -27,6 +27,7 @@ async def seed_users() -> None:
 
     # Users to create
     seed_users_data = [
+        # Admins
         {
             "email": "admin@contabil.com",
             "password": "admin123",
@@ -35,16 +36,67 @@ async def seed_users() -> None:
             "is_verified": True,
         },
         {
+            "email": "admin2@contabil.com",
+            "password": "admin123",
+            "name": "Maria Santos - Admin",
+            "role": UserRole.ADMIN,
+            "is_verified": True,
+        },
+        # Funcionários
+        {
             "email": "func@contabil.com",
             "password": "func123",
-            "name": "João Silva - Funcionário",
+            "name": "João Silva - Contador",
             "role": UserRole.FUNC,
             "is_verified": True,
         },
         {
-            "email": "cliente@empresa.com",
+            "email": "func2@contabil.com",
+            "password": "func123",
+            "name": "Ana Paula Costa - Assistente",
+            "role": UserRole.FUNC,
+            "is_verified": True,
+        },
+        {
+            "email": "func3@contabil.com",
+            "password": "func123",
+            "name": "Pedro Henrique Oliveira - Analista Fiscal",
+            "role": UserRole.FUNC,
+            "is_verified": True,
+        },
+        # Clientes (serão vinculados aos clientes reais)
+        {
+            "email": "contato@techsolutions.com",
             "password": "cliente123",
-            "name": "Carlos Oliveira - Empresa ABC",
+            "name": "Roberto Costa - Tech Solutions",
+            "role": UserRole.CLIENTE,
+            "is_verified": False,
+        },
+        {
+            "email": "comercial@supermercadoboa.com",
+            "password": "cliente123",
+            "name": "Sandra Ferreira - Supermercado Boa Esperança",
+            "role": UserRole.CLIENTE,
+            "is_verified": False,
+        },
+        {
+            "email": "admin@restaurantegirassol.com",
+            "password": "cliente123",
+            "name": "José Antonio Lima - Restaurante Girassol",
+            "role": UserRole.CLIENTE,
+            "is_verified": True,
+        },
+        {
+            "email": "financeiro@construtoranovavida.com",
+            "password": "cliente123",
+            "name": "Marcos Pereira - Construtora Nova Vida",
+            "role": UserRole.CLIENTE,
+            "is_verified": True,
+        },
+        {
+            "email": "contato@belezaecia.com",
+            "password": "cliente123",
+            "name": "Juliana Martins - Beleza & Cia",
             "role": UserRole.CLIENTE,
             "is_verified": False,
         },

@@ -5,10 +5,10 @@ User model for authentication.
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from uuid import uuid4
+from uuid import uuid4, UUID as UUID_TYPE
 
 import bcrypt
-from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, String, func
+from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -42,9 +42,16 @@ class User(Base, UUIDMixin, TimestampMixin):
         DateTime(timezone=True),
         nullable=True,
     )
+    primary_client_id: Mapped[Optional[UUID_TYPE]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("clients.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
 
     # Relationships
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    client_users = relationship("ClientUser", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User {self.email}>"

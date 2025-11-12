@@ -83,3 +83,44 @@ class UserInDB(UserResponse):
     """Schema for user in database (includes sensitive data)."""
 
     password_hash: str
+
+
+class UserListItem(TimestampSchema):
+    """Schema for user list item (simplified)."""
+
+    id: UUID
+    name: str
+    email: EmailStr
+    role: UserRole
+    is_active: bool
+    is_verified: bool
+    last_login_at: Optional[datetime] = None
+
+
+class UserResetPasswordRequest(BaseSchema):
+    """Schema for admin reset password request."""
+
+    generate_temporary: bool = Field(
+        default=True,
+        description="If true, generates a temporary password. If false, you must provide new_password."
+    )
+    new_password: Optional[str] = Field(None, min_length=8, max_length=100)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password(cls, v: Optional[str]) -> Optional[str]:
+        """Validate password strength if provided."""
+        if v is not None:
+            if not any(char.isdigit() for char in v):
+                raise ValueError("Password must contain at least one digit")
+            if not any(char.isalpha() for char in v):
+                raise ValueError("Password must contain at least one letter")
+        return v
+
+
+class UserResetPasswordResponse(BaseSchema):
+    """Schema for reset password response."""
+
+    success: bool
+    temporary_password: Optional[str] = None
+    message: str
